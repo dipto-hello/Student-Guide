@@ -1,0 +1,465 @@
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ArrowRight, BookOpen, Calculator, Clock, Zap, Award, Users, Lightbulb, MessageSquare, FileText, Link as LinkIcon, Briefcase, Sun, Moon } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
+import CGPACalculator from "@/components/tools/CGPACalculator";
+import StudyTimeManager from "@/components/tools/StudyTimeManager";
+import ExamPrep from "@/components/tools/ExamPrep";
+import NoteTaking from "@/components/tools/NoteTaking";
+import ResourceLibrary from "@/components/tools/ResourceLibrary";
+import InternshipGuide from "@/components/tools/InternshipGuide";
+import ProjectIdeas from "@/components/tools/ProjectIdeas";
+import CommunityForum from "@/components/tools/CommunityForum";
+import MentorshipSection from "@/components/tools/MentorshipSection";
+
+/**
+ * Home Page - University Student Resource Hub
+ * Design Philosophy: Premium Vibrant Ascent
+ * A comprehensive platform for students to manage their academic journey
+ */
+
+// Tool titles mapping
+const toolTitles: Record<string, string> = {
+  cgpa: "CGPA Calculator",
+  study: "Study Time Manager",
+  exam: "Exam Preparation",
+  notes: "Note Taking Strategy",
+  resources: "Resource Library",
+  internship: "Internship Guide",
+  projects: "Project Ideas Generator",
+  forum: "Community Forum",
+  mentorship: "Mentorship Program",
+};
+
+export default function Home() {
+  const [scrolled, setScrolled] = useState(false);
+  const [showTool, setShowTool] = useState<string | null>(null);
+  const { theme, toggleTheme } = useTheme();
+
+  // Scroll reveal observer
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  const setupObserver = useCallback(() => {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("revealed");
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
+    );
+
+    document.querySelectorAll(".scroll-reveal").forEach((el) => {
+      observerRef.current?.observe(el);
+    });
+
+    return () => observerRef.current?.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+
+    // Setup scroll reveal
+    const cleanup = setupObserver();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      cleanup();
+    };
+  }, [setupObserver]);
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Navigation - Glassmorphism */}
+      <nav
+        className={`fixed w-full top-0 z-50 transition-all duration-500 ${
+          scrolled
+            ? "glass shadow-lg shadow-black/5"
+            : "bg-transparent"
+        }`}
+      >
+        <div className="container flex items-center justify-between h-16">
+          <div className="flex items-center gap-2">
+            <span className="w-9 h-9 flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl text-white text-lg font-bold shadow-lg shadow-blue-500/25">S</span>
+            <span className="font-bold text-lg text-foreground">Student Hub</span>
+          </div>
+          <div className="hidden md:flex items-center gap-8">
+            <a href="#tools" className="text-foreground/80 hover:text-primary transition-colors text-sm font-medium">
+              Tools
+            </a>
+            <a href="#resources" className="text-foreground/80 hover:text-primary transition-colors text-sm font-medium">
+              Resources
+            </a>
+            <a href="#community" className="text-foreground/80 hover:text-primary transition-colors text-sm font-medium">
+              Community
+            </a>
+            <a href="#about" className="text-foreground/80 hover:text-primary transition-colors text-sm font-medium">
+              About
+            </a>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="theme-toggle"
+              aria-label="Toggle theme"
+            >
+              {theme === "light" ? (
+                <Moon className="w-5 h-5 text-blue-600 theme-icon" />
+              ) : (
+                <Sun className="w-5 h-5 text-yellow-400 theme-icon" />
+              )}
+            </button>
+            <Button
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg shadow-blue-500/25 text-sm"
+            >
+              Explore
+            </Button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section - Animated Gradient + Floating Shapes */}
+      <section className="relative pt-32 pb-24 overflow-hidden">
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 animated-gradient opacity-20" />
+
+        {/* Floating decorative blobs */}
+        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl floating-blob" />
+        <div className="absolute top-40 right-10 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl floating-blob-reverse" />
+        <div className="absolute bottom-10 left-1/3 w-64 h-64 bg-pink-400/15 rounded-full blur-3xl floating-blob-slow" />
+
+        {/* Overlay for readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/60 to-background" />
+
+        <div className="container relative z-10">
+          <div className="max-w-3xl mx-auto text-center animate-fade-in-up">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 dark:bg-blue-400/10 border border-blue-500/20 mb-6">
+              <Zap className="w-4 h-4 text-blue-500" />
+              <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Your Complete Academic Toolkit</span>
+            </div>
+            <h1 className="gradient-text-shimmer font-bold mb-4">
+              Your Complete Student Success Hub
+            </h1>
+            <p className="text-sm text-muted-foreground mb-6">
+              Created by Dipto Sarker | Daffodil International University
+            </p>
+            <p className="text-xl text-foreground/70 mb-8 leading-relaxed">
+              Master your academics with powerful tools for CGPA tracking, study planning, exam prep, and career guidance. Everything you need to succeed in university.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg shadow-orange-500/25"
+                onClick={() => document.getElementById('tools')?.scrollIntoView({ behavior: 'smooth' })}
+              >
+                Start Exploring
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-2 border-blue-500/50 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/50"
+                onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })}
+              >
+                Learn More
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Gradient divider */}
+        <div className="absolute bottom-0 left-0 right-0 h-1 gradient-divider" />
+      </section>
+
+      {/* Tools Section */}
+      <section id="tools" className="py-20 bg-secondary/30 dark:bg-slate-900/50">
+        <div className="container">
+          <div className="text-center mb-16 scroll-reveal">
+            <h2 className="mb-4">Essential Tools for Your Success</h2>
+            <p className="text-lg text-muted-foreground">
+              Powerful calculators and planners to manage your academic journey
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* CGPA Calculator */}
+            <Card className="gradient-border card-hover p-6 cursor-pointer scroll-reveal stagger-1" onClick={() => setShowTool("cgpa")}>
+              <div className="mb-4 inline-block p-3 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-xl">
+                <Calculator className="w-6 h-6 text-blue-600 dark:text-blue-300" />
+              </div>
+              <h3 className="text-xl mb-2">CGPA Calculator</h3>
+              <p className="text-muted-foreground text-base">
+                Calculate your semester and cumulative GPA instantly. Track your academic performance.
+              </p>
+            </Card>
+
+            {/* Study Time Manager */}
+            <Card className="gradient-border card-hover p-6 cursor-pointer scroll-reveal stagger-2" onClick={() => setShowTool("study")}>
+              <div className="mb-4 inline-block p-3 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-xl">
+                <Clock className="w-6 h-6 text-blue-600 dark:text-blue-300" />
+              </div>
+              <h3 className="text-xl mb-2">Study Time Manager</h3>
+              <p className="text-muted-foreground text-base">
+                Plan your study schedule efficiently with the Pomodoro technique and time blocking.
+              </p>
+            </Card>
+
+            {/* Exam Preparation */}
+            <Card className="gradient-border card-hover p-6 cursor-pointer scroll-reveal stagger-3" onClick={() => setShowTool("exam")}>
+              <div className="mb-4 inline-block p-3 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-xl">
+                <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-300" />
+              </div>
+              <h3 className="text-xl mb-2">Exam Preparation</h3>
+              <p className="text-muted-foreground text-base">
+                Expert tips and strategies to ace your exams. Preparation checklist included.
+              </p>
+            </Card>
+
+            {/* Note Taking Strategy */}
+            <Card className="gradient-border card-hover p-6 cursor-pointer scroll-reveal stagger-4" onClick={() => setShowTool("notes")}>
+              <div className="mb-4 inline-block p-3 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-xl">
+                <FileText className="w-6 h-6 text-blue-600 dark:text-blue-300" />
+              </div>
+              <h3 className="text-xl mb-2">Note Taking Strategy</h3>
+              <p className="text-muted-foreground text-base">
+                Learn effective note-taking methods like Cornell, Mind Maps, and Outline methods.
+              </p>
+            </Card>
+
+            {/* Resource Library */}
+            <Card className="gradient-border card-hover p-6 cursor-pointer scroll-reveal stagger-5" onClick={() => setShowTool("resources")}>
+              <div className="mb-4 inline-block p-3 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-xl">
+                <LinkIcon className="w-6 h-6 text-blue-600 dark:text-blue-300" />
+              </div>
+              <h3 className="text-xl mb-2">Resource Library</h3>
+              <p className="text-muted-foreground text-base">
+                Curated list of free online learning platforms, courses, and educational resources.
+              </p>
+            </Card>
+
+            {/* Internship Guide */}
+            <Card className="gradient-border card-hover p-6 cursor-pointer scroll-reveal stagger-6" onClick={() => setShowTool("internship")}>
+              <div className="mb-4 inline-block p-3 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-xl">
+                <Briefcase className="w-6 h-6 text-blue-600 dark:text-blue-300" />
+              </div>
+              <h3 className="text-xl mb-2">Internship Guide</h3>
+              <p className="text-muted-foreground text-base">
+                Step-by-step guide to finding, applying for, and succeeding in internships.
+              </p>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Project Ideas & Community */}
+      <section id="community" className="py-20 bg-background">
+        <div className="container">
+          <div className="grid md:grid-cols-2 gap-12 mb-16">
+            {/* Project Ideas */}
+            <Card className="gradient-border card-hover p-8 cursor-pointer scroll-reveal stagger-1" onClick={() => setShowTool("projects")}>
+              <div className="mb-4 inline-block p-3 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-xl">
+                <Lightbulb className="w-6 h-6 text-blue-600 dark:text-blue-300" />
+              </div>
+              <h3 className="text-xl mb-4">Project Ideas Generator</h3>
+              <p className="text-muted-foreground mb-4">
+                Get inspired with project ideas across different domains. Perfect for coursework, portfolios, and learning.
+              </p>
+              <Button variant="outline" className="w-full border-blue-500/30 hover:border-blue-500/60">
+                Explore Ideas
+              </Button>
+            </Card>
+
+            {/* Community Forum */}
+            <Card className="gradient-border card-hover p-8 cursor-pointer scroll-reveal stagger-2" onClick={() => setShowTool("forum")}>
+              <div className="mb-4 inline-block p-3 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-xl">
+                <MessageSquare className="w-6 h-6 text-blue-600 dark:text-blue-300" />
+              </div>
+              <h3 className="text-xl mb-4">Community Forum</h3>
+              <p className="text-muted-foreground mb-4">
+                Connect with fellow students, ask questions, share experiences, and help each other succeed.
+              </p>
+              <Button variant="outline" className="w-full border-blue-500/30 hover:border-blue-500/60">
+                Join Community
+              </Button>
+            </Card>
+          </div>
+
+          {/* Mentorship Section */}
+          <div className="max-w-4xl mx-auto">
+            <Card className="gradient-border card-hover p-8 cursor-pointer scroll-reveal pulse-glow" onClick={() => setShowTool("mentorship")}>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="inline-block p-3 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-xl">
+                  <Users className="w-6 h-6 text-blue-600 dark:text-blue-300" />
+                </div>
+                <h3 className="text-xl">Mentorship Program</h3>
+              </div>
+              <p className="text-muted-foreground mb-4">
+                Get guidance from senior students and mentors. Share your challenges and learn from their experiences. Whether you need academic advice, career guidance, or personal support, our mentorship program connects you with experienced peers.
+              </p>
+              <Button variant="outline" className="w-full border-blue-500/30 hover:border-blue-500/60">
+                Find a Mentor
+              </Button>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* About Creator Section */}
+      <section id="about" className="py-20 bg-secondary/30 dark:bg-slate-900/50">
+        <div className="container">
+          <h2 className="text-center mb-16 scroll-reveal">About the Creator</h2>
+          
+          <div className="max-w-2xl mx-auto">
+            <Card className="gradient-border p-8 scroll-reveal">
+              <div className="flex flex-col md:flex-row gap-8 items-center">
+                {/* Profile Image */}
+                <div className="flex-shrink-0">
+                  <div
+                    className="w-40 h-40 md:w-48 md:h-48 rounded-2xl shadow-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center pulse-glow"
+                  >
+                    <span className="text-white text-5xl md:text-6xl font-bold">DS</span>
+                  </div>
+                </div>
+
+                {/* Creator Info */}
+                <div className="flex-1">
+                  <h3 className="text-2xl md:text-3xl font-bold mb-2">Dipto Sarker</h3>
+                  <p className="text-orange-500 font-semibold mb-4">
+                    Software Engineering Student
+                  </p>
+                  <p className="text-muted-foreground mb-4">
+                    Daffodil International University
+                  </p>
+                  
+                  <p className="text-foreground/80 mb-6 leading-relaxed">
+                    I created this comprehensive student resource hub to help fellow students navigate their university journey successfully. This platform brings together practical tools, proven strategies, and community support to help you excel academically and prepare for your career.
+                  </p>
+
+                  <div className="flex gap-4">
+                    <a
+                      href="https://www.linkedin.com/in/diptohello/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg transition-all duration-300 hover:scale-105 shadow-lg shadow-blue-500/25"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z" />
+                      </svg>
+                      Connect on LinkedIn
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 relative overflow-hidden">
+        <div className="absolute inset-0 animated-gradient opacity-90" />
+        <div className="absolute inset-0 bg-black/10" />
+        <div className="container relative z-10 text-center">
+          <h2 className="text-white mb-6 scroll-reveal">Start Your Journey to Success Today</h2>
+          <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto scroll-reveal">
+            Use these tools and resources to master your studies, plan your career, and connect with your peers.
+          </p>
+          <Button
+            size="lg"
+            className="bg-white text-blue-600 hover:bg-gray-100 shadow-xl scroll-reveal"
+            onClick={() => document.getElementById('tools')?.scrollIntoView({ behavior: 'smooth' })}
+          >
+            Explore All Tools
+            <ArrowRight className="ml-2 w-4 h-4" />
+          </Button>
+        </div>
+      </section>
+
+      {/* Tool Dialog - shadcn Dialog with backdrop blur */}
+      <Dialog open={!!showTool} onOpenChange={(open) => !open && setShowTool(null)}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto glass-card">
+          <DialogTitle className="text-2xl font-bold gradient-text">
+            {showTool ? toolTitles[showTool] || "Tool" : "Tool"}
+          </DialogTitle>
+          <div className="mt-4">
+            {showTool === "cgpa" && <CGPACalculator />}
+            {showTool === "study" && <StudyTimeManager />}
+            {showTool === "exam" && <ExamPrep />}
+            {showTool === "notes" && <NoteTaking />}
+            {showTool === "resources" && <ResourceLibrary />}
+            {showTool === "internship" && <InternshipGuide />}
+            {showTool === "projects" && <ProjectIdeas />}
+            {showTool === "forum" && <CommunityForum />}
+            {showTool === "mentorship" && <MentorshipSection />}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 dark:bg-black text-gray-400 py-12">
+        <div className="container">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <h4 className="text-white font-semibold mb-4">Tools</h4>
+              <ul className="space-y-2 text-sm">
+                <li><a href="#tools" className="hover:text-white transition-colors">CGPA Calculator</a></li>
+                <li><a href="#tools" className="hover:text-white transition-colors">Study Manager</a></li>
+                <li><a href="#tools" className="hover:text-white transition-colors">Exam Prep</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4">Resources</h4>
+              <ul className="space-y-2 text-sm">
+                <li><a href="#tools" className="hover:text-white transition-colors">Learning Platforms</a></li>
+                <li><a href="#tools" className="hover:text-white transition-colors">Internship Guide</a></li>
+                <li><a href="#tools" className="hover:text-white transition-colors">Project Ideas</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4">Community</h4>
+              <ul className="space-y-2 text-sm">
+                <li><a href="#community" className="hover:text-white transition-colors">Forum</a></li>
+                <li><a href="#community" className="hover:text-white transition-colors">Mentorship</a></li>
+                <li><a href="#about" className="hover:text-white transition-colors">About</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4">Connect</h4>
+              <ul className="space-y-2 text-sm">
+                <li><a href="https://www.linkedin.com/in/diptohello/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">LinkedIn</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Email</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Feedback</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-800 pt-8">
+            <div className="text-center text-sm mb-4">
+              <p className="text-gray-300 mb-2">
+                Created by <a href="https://www.linkedin.com/in/diptohello/" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">Dipto Sarker</a>
+              </p>
+              <p className="text-gray-500 text-xs">
+                Software Engineering Student | Daffodil International University
+              </p>
+            </div>
+            <div className="text-center text-sm border-t border-gray-700 pt-4">
+              <p>&copy; 2026 Student Success Hub. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
