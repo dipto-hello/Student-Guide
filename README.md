@@ -1,6 +1,6 @@
 # 🎓 Student Success Hub
 
-![Live Demo](https://img.shields.io/badge/Live_Demo-student--guide--hqbxcgky7--dipto--hello1.vercel.app-success?style=for-the-badge&logo=vercel)
+![Live Demo](https://img.shields.io/badge/Live_Demo-student--guide--green.vercel.app-success?style=for-the-badge&logo=vercel)
 ![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
 ![Node.js](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)
 ![Express.js](https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB)
@@ -11,7 +11,7 @@
 ---
 
 ## 🚀 Live Website
-**[Visit Student Success Hub](https://student-guide-hqbxcgky7-dipto-hello1.vercel.app)**
+**[Visit Student Success Hub](https://student-guide-green.vercel.app)**
 
 ---
 
