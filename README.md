@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img src="client/public/og-image.jpg" alt="Student Success Hub Banner" width="100%" style="border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);" />
+  <img src="client/public/og-image.jpg" alt="Student Success Hub Banner" width="600px" style="border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);" />
 
   <h1>🎓 Student Success Hub</h1>
   
