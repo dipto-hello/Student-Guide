@@ -123,15 +123,15 @@ export default function StudyRoom() {
               Your Focus Session
             </h2>
             
-            <div className="text-8xl md:text-9xl font-black mb-12 tracking-tighter tabular-nums relative z-10 text-foreground">
+            <div className="text-6xl sm:text-8xl md:text-9xl font-black mb-12 tracking-tighter tabular-nums relative z-10 text-foreground">
               {formatTime(timeLeft)}
             </div>
 
-            <div className="flex gap-4 relative z-10">
+            <div className="flex flex-col sm:flex-row gap-4 relative z-10">
               <Button 
                 onClick={toggleTimer} 
                 size="lg"
-                className={`h-16 px-12 rounded-2xl text-xl font-bold transition-all hover:scale-105 ${isActive ? 'bg-rose-500 hover:bg-rose-600 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white'}`}
+                className={`h-16 px-8 sm:px-12 rounded-2xl text-xl font-bold transition-all hover:scale-105 ${isActive ? 'bg-rose-500 hover:bg-rose-600 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white'}`}
               >
                 {isActive ? <Pause className="w-6 h-6 mr-2" /> : <Play className="w-6 h-6 mr-2" />}
                 {isActive ? 'Pause' : 'Start'}
@@ -140,7 +140,7 @@ export default function StudyRoom() {
                 variant="outline"
                 size="lg"
                 onClick={() => setTimeLeft(25 * 60)}
-                className="h-16 px-8 rounded-2xl border-border hover:bg-accent"
+                className="h-16 px-6 sm:px-8 rounded-2xl border-border hover:bg-accent"
               >
                 Reset
               </Button>

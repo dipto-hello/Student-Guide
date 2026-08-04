@@ -93,18 +93,18 @@ export default function PomodoroTimer() {
       <div className="absolute -bottom-8 left-20 w-96 h-96 bg-pink-500 rounded-full opacity-10"></div>
 
       {/* Navigation */}
-      <div className="absolute top-6 left-6 z-20">
+      <div className="absolute top-4 sm:top-6 left-4 sm:left-6 z-20">
         <Link href="/">
-          <Button variant="ghost" className="nav-surface text-foreground hover:bg-white/10" aria-label="Go back to Home">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back
+          <Button variant="ghost" className="nav-surface text-foreground hover:bg-white/10 px-3 sm:px-4" aria-label="Go back to Home">
+            <ArrowLeft className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Back</span>
           </Button>
         </Link>
       </div>
       
-      <div className="absolute top-6 right-6 z-20">
+      <div className="absolute top-4 sm:top-6 right-4 sm:right-6 z-20">
         <Link href="/study-room">
-          <Button variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500 hover:text-white transition-all shadow-lg shadow-blue-500/20 rounded-full font-bold px-6">
-            <Users className="w-4 h-4 mr-2" /> Join Live Study Room
+          <Button variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500 hover:text-white transition-all shadow-lg shadow-blue-500/20 rounded-full font-bold px-3 sm:px-6 text-xs sm:text-sm">
+            <Users className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Join Live Study Room</span><span className="sm:hidden">Study Room</span>
           </Button>
         </Link>
       </div>
@@ -153,7 +153,7 @@ export default function PomodoroTimer() {
         {/* Timer Display */}
         <div className="relative w-64 h-64 md:w-72 md:h-72 mb-10 flex items-center justify-center glow-ring rounded-full bg-white/5 dark:bg-black/20 backdrop-blur-md border border-white/10">
           {/* Circular Progress SVG */}
-          <svg className="absolute inset-0 w-full h-full transform -rotate-90">
+          <svg viewBox="0 0 256 256" className="absolute inset-0 w-full h-full transform -rotate-90">
             <circle
               cx="128"
               cy="128"
