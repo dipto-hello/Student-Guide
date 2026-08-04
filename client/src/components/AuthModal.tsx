@@ -53,13 +53,16 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
       // Clear previous button
       googleButtonRef.current.innerHTML = '';
 
+      // Calculate a safe width for mobile screens
+      const buttonWidth = Math.min(380, window.innerWidth - 80);
+      
       window.google.accounts.id.renderButton(googleButtonRef.current, {
         type: "standard",
         theme: "filled_black",
         size: "large",
         text: "continue_with",
         shape: "pill",
-        width: 380,
+        width: buttonWidth,
         logo_alignment: "left",
       });
     };

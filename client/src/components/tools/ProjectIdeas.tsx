@@ -193,7 +193,7 @@ export default function ProjectIdeas() {
       >
         <button
           onClick={() => setActiveCategory("All")}
-          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 flex-shrink-0 ${
             activeCategory === "All"
               ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/20"
               : "premium-card text-gray-700 dark:text-gray-300 hover:text-orange-500"
@@ -209,7 +209,7 @@ export default function ProjectIdeas() {
             <button
               key={cat.category}
               onClick={() => setActiveCategory(cat.category)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 flex-shrink-0 ${
                 isActive
                   ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/20"
                   : "premium-card text-gray-700 dark:text-gray-300 hover:text-orange-500"
