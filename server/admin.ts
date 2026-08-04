@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { db, users, studySessions, userCourses, typingScores } from './db.js';
+import { db, users, studySessions, userCourses, typingScores, notifications } from './db.js';
 import { desc, sql, eq } from 'drizzle-orm';
 import { requireAuth } from './auth.js';
 import { ADMIN_EMAIL } from './config.js';
@@ -57,6 +57,63 @@ router.get('/users', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error fetching users list:', error);
     res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// POST /api/admin/broadcast - Send notification to all users
+router.post('/broadcast', requireAdmin, async (req, res) => {
+  try {
+    const { message, type = 'info' } = req.body;
+    
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    // Get all user IDs
+    const allUsers = await db.select({ id: users.id }).from(users);
+    
+    // Create notifications in bulk
+    const newNotifications = allUsers.map(user => ({
+      id: 'notif_' + Math.random().toString(36).substring(2) + Date.now(),
+      userId: user.id,
+      type,
+      message,
+      isRead: false,
+      createdAt: new Date(),
+    }));
+
+    // Chunk insertion if there are many users (SQLite limit is usually 999 vars)
+    const chunkSize = 100;
+    for (let i = 0; i < newNotifications.length; i += chunkSize) {
+      const chunk = newNotifications.slice(i, i + chunkSize);
+      await db.insert(notifications).values(chunk);
+    }
+
+    res.json({ success: true, count: newNotifications.length });
+  } catch (error) {
+    console.error('Error broadcasting message:', error);
+    res.status(500).json({ error: 'Failed to broadcast message' });
+  }
+});
+
+// DELETE /api/admin/users/:userId - Delete a user and all their data
+router.delete('/users/:userId', requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Cannot delete yourself
+    if (req.user?.id === userId || req.user?.email === ADMIN_EMAIL) {
+      const targetUser = await db.select().from(users).where(eq(users.id, userId));
+      if (targetUser[0]?.email === ADMIN_EMAIL) {
+         return res.status(400).json({ error: 'Cannot delete the admin account' });
+      }
+    }
+
+    await db.delete(users).where(eq(users.id, userId));
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
   }
 });
 

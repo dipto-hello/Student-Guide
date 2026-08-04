@@ -3,8 +3,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users, BookOpen, Clock, Keyboard, ShieldAlert } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Users, BookOpen, Clock, Keyboard, ShieldAlert, Send, Trash2, Megaphone } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface AdminStats {
   totalUsers: number;
@@ -27,6 +40,51 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<UserData[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
+
+  const handleBroadcast = async () => {
+    if (!broadcastMessage.trim()) {
+      toast.error("Please enter a message to broadcast");
+      return;
+    }
+
+    setIsBroadcasting(true);
+    try {
+      const res = await fetch("/api/admin/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: broadcastMessage, type: "info" }),
+      });
+
+      if (res.ok) {
+        toast.success("Message broadcasted to all users!");
+        setBroadcastMessage("");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to send broadcast");
+      }
+    } catch (e) {
+      toast.error("An error occurred");
+    } finally {
+      setIsBroadcasting(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("User deleted successfully");
+        setUsers(users.filter(u => u.id !== userId));
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to delete user");
+      }
+    } catch (e) {
+      toast.error("An error occurred");
+    }
+  };
 
   useEffect(() => {
     if (isLoading) return;
@@ -155,6 +213,50 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
+        {/* Broadcast System */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-12"
+        >
+          <Card className="border-border/50 bg-card/50 backdrop-blur-sm rounded-3xl p-6 shadow-xl relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative z-10 flex flex-col md:flex-row gap-6">
+              <div className="w-full md:w-1/3">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4">
+                  <Megaphone className="w-6 h-6 text-blue-500" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Global Broadcast</h3>
+                <p className="text-sm text-muted-foreground">
+                  Send a push notification to all registered users simultaneously. Use this for major platform updates, server maintenance, or welcoming new users.
+                </p>
+              </div>
+              <div className="w-full md:w-2/3 flex flex-col gap-4">
+                <Textarea 
+                  placeholder="Type your broadcast message here..." 
+                  className="min-h-[120px] bg-background/50 border-border/50 resize-none focus-visible:ring-blue-500"
+                  value={broadcastMessage}
+                  onChange={(e) => setBroadcastMessage(e.target.value)}
+                />
+                <Button 
+                  onClick={handleBroadcast} 
+                  disabled={isBroadcasting}
+                  className="self-end bg-blue-600 hover:bg-blue-700 text-white min-w-[200px]"
+                >
+                  {isBroadcasting ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" /> Send to All Users
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+
         {/* Users Table */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -173,6 +275,7 @@ export default function AdminDashboard() {
                     <th className="px-6 py-4 font-medium">Email</th>
                     <th className="px-6 py-4 font-medium">Provider</th>
                     <th className="px-6 py-4 font-medium">Joined Date</th>
+                    <th className="px-6 py-4 font-medium text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
@@ -193,11 +296,34 @@ export default function AdminDashboard() {
                       <td className="px-6 py-4 text-muted-foreground">
                         {new Date(u.createdAt).toLocaleDateString()}
                       </td>
+                      <td className="px-6 py-4 text-right">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 rounded-full" disabled={u.email === user?.email}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="premium-card border-border rounded-2xl">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="text-rose-500 flex items-center gap-2">
+                                <Trash2 className="w-5 h-5" /> Delete User Account?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription className="text-base">
+                                This will permanently delete <strong>{u.name}</strong> ({u.email}) and all their associated data (Study Sessions, CGPA, etc.). This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="bg-transparent border-border hover:bg-accent">Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteUser(u.id)} className="bg-rose-500 text-white hover:bg-rose-600">Yes, delete user</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </td>
                     </tr>
                   ))}
                   {users.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
+                      <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
                         No users found.
                       </td>
                     </tr>
