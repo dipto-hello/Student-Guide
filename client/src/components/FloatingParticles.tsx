@@ -19,7 +19,7 @@ function generateParticles(count: number): Particle[] {
     size: Math.random() * 4 + 1,
     duration: Math.random() * 20 + 15,
     delay: Math.random() * 10,
-    opacity: Math.random() * 0.3 + 0.05,
+    opacity: Math.random() * 0.4 + 0.2,
   }));
 }
 
@@ -30,7 +30,7 @@ interface FloatingParticlesProps {
 
 const FloatingParticles = memo(function FloatingParticles({
   count = 30,
-  color = 'rgba(99,102,241,0.4)',
+  color = 'rgba(139, 92, 246, 0.6)',
 }: FloatingParticlesProps) {
   const particles = useMemo(() => generateParticles(count), [count]);
 

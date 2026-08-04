@@ -595,9 +595,9 @@ export default function Home() {
             </motion.div>
 
             <h1 className="hero-title font-extrabold mb-6 text-5xl md:text-7xl tracking-tight leading-[1.1]">
-              <span className="gradient-text-shimmer inline-block">Master Your</span>
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-[length:200%_auto] animate-pulse inline-block">Master Your</span>
               <br />
-              <span className="gradient-text-shimmer inline-block">Academic Journey</span>
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-[length:200%_auto] animate-pulse inline-block">Academic Journey</span>
             </h1>
 
             <p className="hero-subtitle text-lg md:text-xl text-foreground/70 mb-10 leading-relaxed font-medium max-w-2xl mx-auto">
