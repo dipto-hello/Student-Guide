@@ -839,48 +839,7 @@ export default function Home() {
       {/* ════════════════════════════════════════════
           TOOL DIALOG MODAL
           ════════════════════════════════════════════ */}
-      <Dialog open={!!showTool} onOpenChange={(open) => !open && handleShowTool(null)}>
-        <DialogContent className="max-w-4xl max-h-[88vh] overflow-y-auto bg-background/95 border border-border shadow-2xl rounded-3xl p-0">
-          <div className="p-5 md:p-8">
-            <DialogTitle className="text-xl md:text-2xl font-black mb-3 flex items-center gap-2">
-              {showTool ? toolTitles[showTool] || "Tool" : "Tool"}
-              {isPending && (
-                <span className="text-xs text-muted-foreground animate-pulse ml-3 font-normal">
-                  Loading...
-                </span>
-              )}
-            </DialogTitle>
-            <div className="mt-2 relative min-h-[350px]">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={showTool || "empty"}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  <div className="w-full">
-                    <Suspense
-                      fallback={
-                        <div className="p-8 text-center text-muted-foreground text-sm">Loading tool...</div>
-                      }
-                    >
-                      {showTool === "cgpa" && <CGPACalculator />}
-                      {showTool === "study" && <StudyTimeManager />}
-                      {showTool === "exam" && <ExamPrep />}
-                      {showTool === "notes" && <NoteTaking />}
-                      {showTool === "resources" && <ResourceLibrary />}
-                      {showTool === "internship" && <InternshipGuide />}
-                      {showTool === "projects" && <ProjectIdeas />}
-                      {showTool === "typing" && <TypingSpeedWidget />}
-                    </Suspense>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+
 
       {/* ════════════════════════════════════════════
           FOOTER
