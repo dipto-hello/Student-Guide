@@ -125,7 +125,7 @@ export default function AnalyticsDashboard() {
         
         {/* KPI Cards */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <Card className="ultra-glass p-6 rounded-2xl flex items-center gap-4 border-white/10">
+          <Card className="premium-card-3d glow-shadow-sm hover:glow-shadow-md transition-shadow duration-300 p-6 rounded-2xl flex items-center gap-4 border-0">
             <div className="p-4 bg-blue-500/10 rounded-xl">
               <TrendingUp className="w-8 h-8 text-blue-500" />
             </div>
@@ -134,7 +134,7 @@ export default function AnalyticsDashboard() {
               {loading ? <Skeleton className="h-8 w-20 mt-1" /> : <p className="text-3xl font-black text-foreground">{stats.avgWpmGrowth > 0 ? '+' : ''}{stats.avgWpmGrowth}%</p>}
             </div>
           </Card>
-          <Card className="ultra-glass p-6 rounded-2xl flex items-center gap-4 border-white/10">
+          <Card className="premium-card-3d glow-shadow-sm hover:glow-shadow-md transition-shadow duration-300 p-6 rounded-2xl flex items-center gap-4 border-0">
             <div className="p-4 bg-purple-500/10 rounded-xl">
               <Target className="w-8 h-8 text-purple-500" />
             </div>
@@ -143,7 +143,7 @@ export default function AnalyticsDashboard() {
               {loading ? <Skeleton className="h-8 w-20 mt-1" /> : <p className="text-3xl font-black text-foreground">{stats.currentCgpa.toFixed(2)}</p>}
             </div>
           </Card>
-          <Card className="ultra-glass p-6 rounded-2xl flex items-center gap-4 border-white/10">
+          <Card className="premium-card-3d glow-shadow-sm hover:glow-shadow-md transition-shadow duration-300 p-6 rounded-2xl flex items-center gap-4 border-0">
             <div className="p-4 bg-orange-500/10 rounded-xl">
               <Zap className="w-8 h-8 text-orange-500" />
             </div>

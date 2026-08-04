@@ -3,6 +3,10 @@ import jwt from 'jsonwebtoken';
 import { db, users } from './db.js';
 import { eq } from 'drizzle-orm';
 import { NextFunction, Request, Response } from 'express';
+import { JWT_SECRET, TOKEN_EXPIRY, COOKIE_OPTIONS } from './config.js';
+import { OAuth2Client } from 'google-auth-library';
+
+const googleClient = new OAuth2Client(process.env.VITE_GOOGLE_CLIENT_ID);
 
 declare global {
   namespace Express {
@@ -13,20 +17,10 @@ declare global {
 }
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'student_hub_jwt_secret_key_2024';
-const TOKEN_EXPIRY = '30d';
 
 function generateToken(user: { id: string; email: string }) {
   return jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: TOKEN_EXPIRY });
 }
-
-const cookieOptions = {
-  httpOnly: true,
-  secure: false,  // localhost doesn't use HTTPS
-  sameSite: 'lax' as const,
-  maxAge: 30 * 24 * 60 * 60 * 1000,  // 30 days
-  path: '/'
-};
 
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   const token = req.cookies?.auth_token;
@@ -51,8 +45,19 @@ router.post('/google', async (req, res) => {
       return res.status(400).json({ error: 'Missing credential' });
     }
 
-    const payload = JSON.parse(Buffer.from(credential.split('.')[1], 'base64').toString());
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.VITE_GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    
+    if (!payload || !payload.email) {
+      return res.status(400).json({ error: 'Invalid Google token payload' });
+    }
+
     const { sub: googleId, email, name, picture } = payload;
+    const safeName = name || "Google User";
+    const safePicture = picture || "";
 
     const existingUsers = await db.select().from(users).where(eq(users.email, email));
     let user = existingUsers[0];
@@ -60,7 +65,7 @@ router.post('/google', async (req, res) => {
     if (user) {
       if (!user.googleId) {
         await db.update(users)
-          .set({ googleId, avatarUrl: user.avatarUrl || picture })
+          .set({ googleId, avatarUrl: user.avatarUrl || safePicture })
           .where(eq(users.id, user.id));
         user.googleId = googleId;
       }
@@ -68,10 +73,10 @@ router.post('/google', async (req, res) => {
       const id = 'usr_' + Date.now().toString(36);
       user = {
         id,
-        name,
+        name: safeName,
         email,
         passwordHash: null,
-        avatarUrl: picture,
+        avatarUrl: safePicture,
         provider: 'google',
         googleId,
         createdAt: new Date()
@@ -80,7 +85,7 @@ router.post('/google', async (req, res) => {
     }
 
     const token = generateToken(user);
-    res.cookie('auth_token', token, cookieOptions);
+    res.cookie('auth_token', token, COOKIE_OPTIONS);
     
     const { passwordHash, ...safeUser } = user;
     res.json({ user: safeUser });
@@ -114,7 +119,7 @@ router.get('/me', async (req, res) => {
 
 // POST /api/auth/logout
 router.post('/logout', (req, res) => {
-  res.clearCookie('auth_token', cookieOptions);
+  res.clearCookie('auth_token', COOKIE_OPTIONS);
   res.json({ success: true });
 });
 

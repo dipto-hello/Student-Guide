@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -13,6 +13,7 @@ import userRouter from './user.js';
 import searchRouter from './search.js';
 import notificationsRouter from './notifications.js';
 import { setupWebSocket } from './socket.js';
+import { CORS_OPTIONS } from './config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,10 +21,7 @@ const __dirname = path.dirname(__filename);
 async function startServer() {
   const app = express();
   app.use(helmet());
-  app.use(cors({
-    origin: process.env.NODE_ENV === 'production' ? process.env.CLIENT_URL : 'http://localhost:3000',
-    credentials: true,
-  }));
+  app.use(cors(CORS_OPTIONS));
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
   
@@ -73,6 +71,14 @@ async function startServer() {
   // Handle client-side routing - serve index.html for all routes
   app.get("*", (_req, res) => {
     res.sendFile(path.join(staticPath, "index.html"));
+  });
+  
+  // Global Error Handler
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    console.error(err.stack);
+    res.status(err.status || 500).json({
+      error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message
+    });
   });
 
   const port = process.env.PORT || (process.env.NODE_ENV === 'production' ? 3000 : 3001);

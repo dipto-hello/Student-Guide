@@ -113,7 +113,7 @@ export default function PomodoroTimer() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="premium-card w-full max-w-md p-8 rounded-[2.5rem] shadow-2xl relative z-10 flex flex-col items-center border border-border/40"
+        className="premium-card-3d glow-shadow-lg w-full max-w-md p-8 rounded-[2.5rem] relative z-10 flex flex-col items-center border-0"
       >
         <div className="flex justify-between w-full items-center mb-8">
           <h1 className="text-2xl font-black bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
@@ -151,7 +151,7 @@ export default function PomodoroTimer() {
         </div>
 
         {/* Timer Display */}
-        <div className="relative w-64 h-64 flex items-center justify-center mb-10">
+        <div className="relative w-64 h-64 md:w-72 md:h-72 mb-10 flex items-center justify-center glow-ring rounded-full bg-white/5 dark:bg-black/20 backdrop-blur-md border border-white/10">
           {/* Circular Progress SVG */}
           <svg className="absolute inset-0 w-full h-full transform -rotate-90">
             <circle
@@ -190,21 +190,22 @@ export default function PomodoroTimer() {
         {/* Controls */}
         <div className="flex gap-4 items-center">
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button 
+            <Button
               size="lg"
-              className={`w-20 h-20 rounded-full shadow-2xl flex items-center justify-center ${isActive ? 'bg-orange-500 hover:bg-orange-600' : 'bg-primary hover:bg-primary/90'}`}
+              variant="default"
+              className="w-16 h-16 rounded-full bg-white text-black hover:bg-zinc-200 shadow-xl btn-3d"
               onClick={toggleTimer}
               aria-label={isActive ? "Pause timer" : "Start timer"}
             >
-              {isActive ? <Pause className="w-8 h-8 text-white" /> : <Play className="w-8 h-8 text-white ml-1" />}
+              {isActive ? <Pause className="w-8 h-8 ml-0.5" /> : <Play className="w-8 h-8 ml-1" />}
             </Button>
           </motion.div>
           
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
-              variant="outline"
               size="lg"
-              className="w-14 h-14 rounded-full border-white/20 bg-white/5 hover:bg-white/10"
+              variant="outline"
+              className="w-16 h-16 rounded-full border-white/20 hover:bg-white/10 btn-3d"
               onClick={resetTimer}
               aria-label="Reset timer"
             >

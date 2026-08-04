@@ -1,6 +1,6 @@
 import express from 'express';
 import { db, notifications } from './db.js';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { requireAuth } from './auth.js';
 
 const notificationsRouter = express.Router();
@@ -32,7 +32,7 @@ notificationsRouter.put('/:id/read', async (req, res) => {
     await db
       .update(notifications)
       .set({ isRead: true })
-      .where(eq(notifications.id, notificationId));
+      .where(and(eq(notifications.id, notificationId), eq(notifications.userId, userId)));
       
     res.json({ success: true });
   } catch (error) {

@@ -1,47 +1,66 @@
-import { Router } from 'express';
-import jwt from 'jsonwebtoken';
-import { db, userCourses, typingScores, studySessions, userStreaks, users } from './db.js';
-import { eq, desc } from 'drizzle-orm';
+import { Router, Request, Response } from 'express';
+import { db, userCourses, typingScores, studySessions, userStreaks, users, notifications } from './db.js';
+import { eq, desc, and } from 'drizzle-orm';
 import { z } from 'zod';
+import { JWT_SECRET } from './config.js';
+import { requireAuth } from './auth.js';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'student_hub_jwt_secret_key_2024';
 
-// Middleware to protect routes
-function requireAuth(req: any, res: any, next: any) {
-  const token = req.cookies?.auth_token;
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string, email: string };
-    req.userId = decoded.id;
-    next();
-  } catch (error) {
-    return res.status(401).json({ error: 'Invalid token' });
-  }
-}
-
+// Middleware to protect routes (requireAuth handles putting user object on req)
 router.use(requireAuth);
 
+type AuthRequest = Request & { user?: { id: string, email: string }, userId?: string };
+
+// Helper middleware to map req.user.id to req.userId for existing routes
+router.use((req: AuthRequest, res: Response, next) => {
+  if (req.user) {
+    req.userId = req.user.id;
+  }
+  next();
+});
+
 // GET /api/user/courses
-router.get('/courses', async (req: any, res) => {
+router.get('/courses', async (req: AuthRequest, res: Response) => {
   try {
-    const courses = await db.select().from(userCourses).where(eq(userCourses.userId, req.userId));
+    const courses = await db.select().from(userCourses).where(eq(userCourses.userId, req.userId!));
     res.json(courses);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch courses' });
   }
 });
 
+// Zod Schemas
+const courseSchema = z.object({
+  name: z.string().min(2),
+  creditHours: z.number().positive(),
+  grade: z.number().min(0).max(4.0)
+});
+
+const typingScoreSchema = z.object({
+  wpm: z.number().min(0),
+  accuracy: z.number().min(0).max(100),
+  difficulty: z.enum(['easy', 'medium', 'hard'])
+});
+
+const studySessionSchema = z.object({
+  type: z.string().min(2),
+  durationMinutes: z.number().positive()
+});
+
 // POST /api/user/courses
-router.post('/courses', async (req: any, res) => {
+router.post('/courses', async (req: AuthRequest, res: Response) => {
   try {
-    const { name, creditHours, grade } = req.body;
-    if (!name || creditHours == null || grade == null) return res.status(400).json({ error: 'Invalid input' });
+    const validatedData = courseSchema.safeParse(req.body);
+    if (!validatedData.success) {
+      return res.status(400).json({ error: 'Invalid input', details: validatedData.error.issues });
+    }
+    const { name, creditHours, grade } = validatedData.data;
     
     const id = 'course_' + Date.now().toString(36);
     await db.insert(userCourses).values({
       id,
-      userId: req.userId,
+      userId: req.userId!,
       name,
       creditHours,
       grade,
@@ -54,17 +73,24 @@ router.post('/courses', async (req: any, res) => {
 });
 
 // PATCH /api/user/courses/:id
-router.patch('/courses/:id', async (req: any, res) => {
+router.patch('/courses/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, creditHours, grade } = req.body;
+    const updateSchema = courseSchema.partial();
+    const validatedData = updateSchema.safeParse(req.body);
+    
+    if (!validatedData.success) {
+      return res.status(400).json({ error: 'Invalid input', details: validatedData.error.issues });
+    }
+    
+    const { name, creditHours, grade } = validatedData.data;
     
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (creditHours !== undefined) updateData.creditHours = creditHours;
     if (grade !== undefined) updateData.grade = grade;
     
-    await db.update(userCourses).set(updateData).where(eq(userCourses.id, id));
+    await db.update(userCourses).set(updateData).where(and(eq(userCourses.id, id), eq(userCourses.userId, req.userId!)));
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update course' });
@@ -72,9 +98,9 @@ router.patch('/courses/:id', async (req: any, res) => {
 });
 
 // DELETE /api/user/courses/:id
-router.delete('/courses/:id', async (req: any, res) => {
+router.delete('/courses/:id', async (req: AuthRequest, res: Response) => {
   try {
-    await db.delete(userCourses).where(eq(userCourses.id, req.params.id));
+    await db.delete(userCourses).where(and(eq(userCourses.id, req.params.id), eq(userCourses.userId, req.userId!)));
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete course' });
@@ -82,9 +108,9 @@ router.delete('/courses/:id', async (req: any, res) => {
 });
 
 // DELETE /api/user/courses (Clear all)
-router.delete('/courses', async (req: any, res) => {
+router.delete('/courses', async (req: AuthRequest, res: Response) => {
   try {
-    await db.delete(userCourses).where(eq(userCourses.userId, req.userId));
+    await db.delete(userCourses).where(eq(userCourses.userId, req.userId!));
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to clear courses' });
@@ -92,15 +118,18 @@ router.delete('/courses', async (req: any, res) => {
 });
 
 // POST /api/user/typing-score
-router.post('/typing-score', async (req: any, res) => {
+router.post('/typing-score', async (req: AuthRequest, res: Response) => {
   try {
-    const { wpm, accuracy, difficulty } = req.body;
-    if (wpm == null || accuracy == null || !difficulty) return res.status(400).json({ error: 'Invalid input' });
+    const validatedData = typingScoreSchema.safeParse(req.body);
+    if (!validatedData.success) {
+      return res.status(400).json({ error: 'Invalid input', details: validatedData.error.issues });
+    }
+    const { wpm, accuracy, difficulty } = validatedData.data;
 
     const id = 'typing_' + Date.now().toString(36);
     await db.insert(typingScores).values({
       id,
-      userId: req.userId,
+      userId: req.userId!,
       wpm,
       accuracy,
       difficulty,
@@ -113,10 +142,10 @@ router.post('/typing-score', async (req: any, res) => {
 });
 
 // GET /api/user/typing-history
-router.get('/typing-history', async (req: any, res) => {
+router.get('/typing-history', async (req: AuthRequest, res: Response) => {
   try {
     const history = await db.select().from(typingScores)
-      .where(eq(typingScores.userId, req.userId))
+      .where(eq(typingScores.userId, req.userId!))
       .orderBy(desc(typingScores.createdAt))
       .limit(10);
     res.json(history);
@@ -126,15 +155,18 @@ router.get('/typing-history', async (req: any, res) => {
 });
 
 // POST /api/user/study-session
-router.post('/study-session', async (req: any, res) => {
+router.post('/study-session', async (req: AuthRequest, res: Response) => {
   try {
-    const { type, durationMinutes } = req.body;
-    if (!type || durationMinutes == null) return res.status(400).json({ error: 'Invalid input' });
+    const validatedData = studySessionSchema.safeParse(req.body);
+    if (!validatedData.success) {
+      return res.status(400).json({ error: 'Invalid input', details: validatedData.error.issues });
+    }
+    const { type, durationMinutes } = validatedData.data;
 
     const id = 'session_' + Date.now().toString(36);
     await db.insert(studySessions).values({
       id,
-      userId: req.userId,
+      userId: req.userId!,
       type,
       durationMinutes,
       createdAt: new Date(),
@@ -146,10 +178,10 @@ router.post('/study-session', async (req: any, res) => {
 });
 
 // GET /api/user/study-sessions
-router.get('/study-sessions', async (req: any, res) => {
+router.get('/study-sessions', async (req: AuthRequest, res: Response) => {
   try {
     const sessions = await db.select().from(studySessions)
-      .where(eq(studySessions.userId, req.userId))
+      .where(eq(studySessions.userId, req.userId!))
       .orderBy(desc(studySessions.createdAt))
       .limit(20);
     
@@ -171,9 +203,9 @@ router.get('/study-sessions', async (req: any, res) => {
 });
 
 // GET /api/user/streak
-router.get('/streak', async (req: any, res) => {
+router.get('/streak', async (req: AuthRequest, res: Response) => {
   try {
-    const streak = await db.select().from(userStreaks).where(eq(userStreaks.userId, req.userId));
+    const streak = await db.select().from(userStreaks).where(eq(userStreaks.userId, req.userId!));
     if (streak.length === 0) {
       return res.json({
         currentStreak: 0,
@@ -195,14 +227,14 @@ router.get('/streak', async (req: any, res) => {
 });
 
 // POST /api/user/streak/activity
-router.post('/streak/activity', async (req: any, res) => {
+router.post('/streak/activity', async (req: AuthRequest, res: Response) => {
   try {
     const today = new Date().toISOString().split('T')[0];
-    const streak = await db.select().from(userStreaks).where(eq(userStreaks.userId, req.userId));
+    const streak = await db.select().from(userStreaks).where(eq(userStreaks.userId, req.userId!));
     
     if (streak.length === 0) {
       await db.insert(userStreaks).values({
-        userId: req.userId,
+        userId: req.userId!,
         currentStreak: 1,
         longestStreak: 1,
         lastActiveDate: today,
@@ -233,7 +265,7 @@ router.post('/streak/activity', async (req: any, res) => {
       currentStreak: newCurrent,
       longestStreak: newLongest,
       lastActiveDate: today
-    }).where(eq(userStreaks.userId, req.userId));
+    }).where(eq(userStreaks.userId, req.userId!));
     
     res.json({ success: true, currentStreak: newCurrent });
   } catch (error) {
@@ -242,15 +274,15 @@ router.post('/streak/activity', async (req: any, res) => {
 });
 
 // POST /api/user/streak/achievement
-router.post('/streak/achievement', async (req: any, res) => {
+router.post('/streak/achievement', async (req: AuthRequest, res: Response) => {
   try {
     const { achievementId } = req.body;
     if (!achievementId) return res.status(400).json({ error: 'Invalid input' });
 
-    const streak = await db.select().from(userStreaks).where(eq(userStreaks.userId, req.userId));
+    const streak = await db.select().from(userStreaks).where(eq(userStreaks.userId, req.userId!));
     if (streak.length === 0) {
       await db.insert(userStreaks).values({
-        userId: req.userId,
+        userId: req.userId!,
         currentStreak: 0,
         longestStreak: 0,
         lastActiveDate: null,
@@ -266,7 +298,7 @@ router.post('/streak/achievement', async (req: any, res) => {
       achievements.push(achievementId);
       await db.update(userStreaks).set({
         achievements: JSON.stringify(achievements)
-      }).where(eq(userStreaks.userId, req.userId));
+      }).where(eq(userStreaks.userId, req.userId!));
     }
     
     res.json({ success: true });
@@ -276,12 +308,12 @@ router.post('/streak/achievement', async (req: any, res) => {
 });
 
 // PUT /api/user/profile
-router.put('/profile', async (req: any, res) => {
+router.put('/profile', async (req: AuthRequest, res: Response) => {
   try {
     const { name } = req.body;
     if (!name || name.trim().length < 2) return res.status(400).json({ error: 'Invalid name' });
 
-    await db.update(users).set({ name }).where(eq(users.id, req.userId));
+    await db.update(users).set({ name }).where(eq(users.id, req.userId!));
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update profile' });
@@ -289,15 +321,15 @@ router.put('/profile', async (req: any, res) => {
 });
 
 // DELETE /api/user/account
-router.delete('/account', async (req: any, res) => {
+router.delete('/account', async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.userId;
+    const userId = req.userId!;
     // Drizzle will handle cascades if configured, but let's delete manually to be safe
     await db.delete(userCourses).where(eq(userCourses.userId, userId));
     await db.delete(typingScores).where(eq(typingScores.userId, userId));
     await db.delete(studySessions).where(eq(studySessions.userId, userId));
     await db.delete(userStreaks).where(eq(userStreaks.userId, userId));
-    // notifications might need deletion too if it has userId, but notifications table didn't have a userId in schema I saw earlier. Wait, I should just delete the user.
+    await db.delete(notifications).where(eq(notifications.userId, userId));
     await db.delete(users).where(eq(users.id, userId));
     
     res.clearCookie('auth_token', { path: '/' });

@@ -124,6 +124,7 @@ export default function TypingSpeedWidget() {
   const [textToType, setTextToType] = useState("");
   const [userInput, setUserInput] = useState("");
   const [startTime, setStartTime] = useState<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
   const [endTime, setEndTime] = useState<number | null>(null);
   const [wpm, setWpm] = useState(0);
   const [liveWpm, setLiveWpm] = useState(0);
@@ -155,6 +156,7 @@ export default function TypingSpeedWidget() {
     setTextToType(text);
     setUserInput("");
     setStartTime(null);
+    startTimeRef.current = null;
     setEndTime(null);
     setWpm(0);
     setLiveWpm(0);
@@ -224,8 +226,10 @@ export default function TypingSpeedWidget() {
 
     if (val.length > textToType.length) return;
 
-    if (!startTime && val.length > 0) {
-      setStartTime(Date.now());
+    if (!startTimeRef.current && val.length > 0) {
+      const now = Date.now();
+      startTimeRef.current = now;
+      setStartTime(now);
     }
 
     if (soundEnabled && val.length > userInput.length) {
@@ -256,7 +260,9 @@ export default function TypingSpeedWidget() {
       const finishTime = Date.now();
       setEndTime(finishTime);
 
-      const timeTakenMinutes = (finishTime - (startTime || finishTime)) / 60000;
+      // Ensure timeTaken is at least 1 millisecond to prevent Infinity WPM
+      const elapsedMs = Math.max(1, finishTime - (startTimeRef.current || finishTime));
+      const timeTakenMinutes = elapsedMs / 60000;
       const wordCount = textToType.split(" ").length;
       const finalWpm = Math.round(wordCount / timeTakenMinutes);
       setWpm(finalWpm);

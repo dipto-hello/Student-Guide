@@ -3,15 +3,11 @@ import { Server, Socket } from 'socket.io';
 import { db, notifications } from './db.js';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-student-guide-key';
+import { JWT_SECRET, CORS_OPTIONS } from './config.js';
 
 export function setupWebSocket(server: HttpServer) {
   const io = new Server(server, {
-    cors: {
-      origin: process.env.NODE_ENV === 'production' ? process.env.CLIENT_URL : 'http://localhost:3000',
-      credentials: true
-    }
+    cors: CORS_OPTIONS
   });
 
   // Middleware to authenticate socket connections
@@ -22,7 +18,7 @@ export function setupWebSocket(server: HttpServer) {
       return next(new Error('Authentication error'));
     }
 
-    const tokenMatch = cookieHeader.match(/token=([^;]+)/);
+    const tokenMatch = cookieHeader.match(/auth_token=([^;]+)/);
     if (!tokenMatch) {
       return next(new Error('Authentication error'));
     }
