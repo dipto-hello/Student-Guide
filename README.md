@@ -1,45 +1,78 @@
-# 🎓 Student Success Hub
+<div align="center">
 
-![Live Demo](https://img.shields.io/badge/Live_Demo-student--guide--green.vercel.app-success?style=for-the-badge&logo=vercel)
-![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
-![Node.js](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)
-![Express.js](https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB)
-![SQLite](https://img.shields.io/badge/sqlite-%2307405e.svg?style=for-the-badge&logo=sqlite&logoColor=white)
+  <img src="client/public/og-image.jpg" alt="Student Success Hub Banner" width="100%" style="border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);" />
 
-**Master Your Academic Journey** — An all-in-one premium workspace designed to elevate student productivity with powerful tools for CGPA tracking, study planning, exam prep, and career guidance.
+  <h1>🎓 Student Success Hub</h1>
+  
+  <p><strong>The Ultimate Premium Workspace for University Students</strong></p>
+
+  <p>
+    <a href="https://student-guide-green.vercel.app"><img src="https://img.shields.io/badge/Live_Demo-Vercel-success?style=for-the-badge&logo=vercel" alt="Live Demo" /></a>
+    <a href="https://github.com/dipto-hello/Student-Guide"><img src="https://img.shields.io/badge/Status-Active-blue?style=for-the-badge&logo=github" alt="Status" /></a>
+  </p>
+
+  <p>
+    <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+    <img src="https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E" alt="Vite" />
+    <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind" />
+    <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" />
+    <img src="https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite" />
+  </p>
+
+</div>
 
 ---
 
-## 🚀 Live Website
-**[Visit Student Success Hub](https://student-guide-green.vercel.app)**
+## ✨ Overview
 
----
+**Student Success Hub** is an all-in-one, highly polished web application designed to elevate student productivity. Built with a stunning **3D Glassmorphism** aesthetic, it provides powerful tools for CGPA tracking, study planning, exam prep, and real-time collaboration.
 
-## ✨ Key Features
+## 🚀 Key Features
 
-- **📊 CGPA Calculator:** Track your current grades and predict future semesters to achieve your target CGPA.
-- **⏱️ Pomodoro Study Timer:** Stay focused with built-in study and break intervals.
-- **⌨️ Typing Speed Widget:** Test and improve your WPM (Words Per Minute).
-- **🔒 Secure Authentication:** Seamless and secure Google OAuth integration.
-- **📈 Analytics Dashboard:** Visualize your study patterns and academic progress over time.
-- **📱 Fully Responsive:** Beautiful, premium UI that works flawlessly on desktop, tablet, and mobile.
+*   **📊 CGPA & SGPA Calculator:** Track your current grades and predict future semesters with an interactive, animated interface.
+*   **⏱️ Pomodoro Study Timer:** Stay focused with built-in study and break intervals.
+*   **⌨️ Typing Speed Widget:** Test and improve your WPM (Words Per Minute) in real-time.
+*   **👥 Real-Time Study Room:** Join a virtual study room (via Socket.io) to see who else is studying and chat with peers.
+*   **👑 Powerful Admin Dashboard:** Exclusive admin panel to monitor platform analytics, broadcast messages to all users, and manage accounts.
+*   **🔒 Secure Authentication:** Seamless and secure Google OAuth integration.
+*   **📱 Fully Responsive:** Beautiful, premium UI that works flawlessly on desktop, tablet, and mobile.
+*   **🌍 PWA Ready:** Installable as a Progressive Web App for offline access!
 
 ---
 
 ## 🛠️ Tech Stack
 
-### Frontend
-* **Framework:** React.js (Vite)
-* **Styling:** Tailwind CSS + Radix UI
-* **State Management:** Zustand
-* **Deployment:** Vercel
-
-### Backend
-* **Runtime:** Node.js
-* **Framework:** Express.js
-* **ORM:** Drizzle ORM
-* **Database:** SQLite (Hosted on Turso Edge DB)
-* **Deployment:** Render
+<div align="center">
+  <table>
+    <tr>
+      <td align="center"><b>Frontend</b></td>
+      <td align="center"><b>Backend</b></td>
+      <td align="center"><b>Database & Deployment</b></td>
+    </tr>
+    <tr>
+      <td>
+        • React (Vite)<br>
+        • Tailwind CSS<br>
+        • Framer Motion (3D Animations)<br>
+        • Zustand (State)<br>
+        • Radix UI
+      </td>
+      <td>
+        • Node.js<br>
+        • Express.js<br>
+        • Socket.io (Real-time)<br>
+        • Drizzle ORM<br>
+        • JSON Web Tokens (JWT)
+      </td>
+      <td>
+        • SQLite<br>
+        • Turso Edge DB<br>
+        • Vercel (Frontend Hosting)<br>
+        • Render (Backend Hosting)
+      </td>
+    </tr>
+  </table>
+</div>
 
 ---
 
@@ -62,9 +95,8 @@ npm install
 Create a `.env` file in the root directory and add the following:
 ```env
 VITE_GOOGLE_CLIENT_ID=your_google_client_id
-TURSO_DATABASE_URL=your_turso_db_url
-TURSO_AUTH_TOKEN=your_turso_auth_token
 ```
+*(Note: JWT_SECRET, ADMIN_EMAIL, and CLIENT_URL are automatically handled via zero-config deployment settings in `server/config.ts`)*
 
 ### 4. Run the Development Server
 ```bash
@@ -74,12 +106,12 @@ Open `http://localhost:3000` in your browser.
 
 ---
 
-## 🤝 Contributing
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/dipto-hello/Student-Guide/issues).
-
----
-
 ## 👨‍💻 Developed By
+
 **Dipto Sarker**
 
-*If you found this project helpful, don't forget to give it a ⭐ on GitHub!*
+<p>
+  <a href="https://github.com/dipto-hello"><img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"></a>
+</p>
+
+*If you found this project helpful or visually inspiring, don't forget to give it a ⭐ on GitHub!*
