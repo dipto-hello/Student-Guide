@@ -1,10 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+
 import {
   ArrowRight,
   BookOpen,
@@ -32,7 +28,7 @@ import {
   LogOut,
   User as UserIcon,
 } from "lucide-react";
-import { useState, useEffect, useRef, useCallback, useTransition, lazy, Suspense, memo } from "react";
+import { useState, useEffect, useRef, useCallback, useTransition, memo } from "react";
 import { useLocation } from "wouter";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,18 +37,6 @@ import { motion, AnimatePresence, type Variants } from "framer-motion";
 import Tilt3DCard from "@/components/Tilt3DCard";
 import FloatingParticles from "@/components/FloatingParticles";
 import ScrollReveal from "@/components/ScrollReveal";
-
-/* ──────────────────────────────────────────────────
-   LAZY-LOADED TOOL COMPONENTS
-   ────────────────────────────────────────────────── */
-const CGPACalculator = lazy(() => import("@/components/tools/CGPACalculator"));
-const StudyTimeManager = lazy(() => import("@/components/tools/StudyTimeManager"));
-const ExamPrep = lazy(() => import("@/components/tools/ExamPrep"));
-const NoteTaking = lazy(() => import("@/components/tools/NoteTaking"));
-const ResourceLibrary = lazy(() => import("@/components/tools/ResourceLibrary"));
-const InternshipGuide = lazy(() => import("@/components/tools/InternshipGuide"));
-const ProjectIdeas = lazy(() => import("@/components/tools/ProjectIdeas"));
-const TypingSpeedWidget = lazy(() => import("@/components/tools/TypingSpeedWidget"));
 
 /* ──────────────────────────────────────────────────
    CONSTANTS
@@ -342,9 +326,8 @@ const TestimonialCard = memo(function TestimonialCard({
    ══════════════════════════════════════════════════ */
 export default function Home() {
   const [scrolled, setScrolled] = useState(false);
-  const [showTool, setShowTool] = useState<string | null>(null);
+
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [, setLocation] = useLocation();
   const spotlightRef = useRef<HTMLDivElement>(null);
@@ -376,11 +359,10 @@ export default function Home() {
 
   const handleShowTool = useCallback(
     (id: string | null) => {
-      startTransition(() => {
-        setShowTool(id);
-      });
+      if (!id) return;
+      setLocation(`/tool/${id}`);
     },
-    [startTransition],
+    [setLocation],
   );
 
   const handleToolOpen = useCallback(

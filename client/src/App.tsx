@@ -14,6 +14,7 @@ const PomodoroTimer = lazy(() => import("./pages/PomodoroTimer"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const Profile = lazy(() => import("./pages/Profile"));
 const StudyRoom = lazy(() => import("./pages/StudyRoom"));
+const ToolPage = lazy(() => import("./pages/ToolPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -22,6 +23,7 @@ function Router() {
     <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
       <Switch>
         <Route path={"/"} component={Home} />
+        <Route path={"/tool/:id"} component={ToolPage} />
         <Route path={"/pomodoro"} component={PomodoroTimer} />
         <Route path={"/study-room"}>
           <ProtectedRoute>
