@@ -28,6 +28,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   const googleButtonRef = useRef<HTMLDivElement>(null);
+  const isInitialized = useRef(false);
 
   const handleClose = (newOpen: boolean) => {
     onOpenChange(newOpen);
@@ -35,10 +36,14 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
 
   // Initialize Google Sign-In when modal opens
   useEffect(() => {
-    if (!open || !googleClientId) return;
+    if (!open || !googleClientId) {
+      isInitialized.current = false;
+      return;
+    }
 
     const initGoogle = () => {
       if (!window.google?.accounts?.id || !googleButtonRef.current) return;
+      if (isInitialized.current) return; // Prevent double render in StrictMode
 
       window.google.accounts.id.initialize({
         client_id: googleClientId,
@@ -65,6 +70,8 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
         width: buttonWidth,
         logo_alignment: "left",
       });
+      
+      isInitialized.current = true;
     };
 
     // Small delay to ensure DOM is ready
