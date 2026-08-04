@@ -410,16 +410,16 @@ export default function Home() {
         role="navigation"
         aria-label="Main navigation"
       >
-        <div className="container flex items-center justify-between h-16 gap-4">
+        <div className="container px-4 flex items-center justify-between h-16 gap-2 sm:gap-4">
           <button
-            className="flex items-center gap-2.5 group shrink-0"
+            className="flex items-center gap-2 sm:gap-2.5 group shrink-0"
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             aria-label="Scroll to top"
           >
-            <span className="w-9 h-9 flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl text-white text-lg font-bold shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-shadow duration-300">
+            <span className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl text-white text-base sm:text-lg font-bold shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-shadow duration-300">
               S
             </span>
-            <span className="font-bold text-lg text-foreground whitespace-nowrap">Student Hub</span>
+            <span className="font-bold text-base sm:text-lg text-foreground whitespace-nowrap">Student Hub</span>
           </button>
 
           <div className="hidden md:flex items-center gap-5 lg:gap-8 shrink" role="menubar">
@@ -436,10 +436,10 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <button
               onClick={toggleTheme}
-              className="theme-toggle shrink-0"
+              className="theme-toggle shrink-0 p-1.5 sm:p-2"
               aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
             >
               <motion.div
@@ -448,27 +448,27 @@ export default function Home() {
                 transition={{ duration: 0.4, ease: "easeInOut" }}
               >
                 {theme === "light" ? (
-                  <Moon className="w-5 h-5 text-indigo-600" aria-hidden="true" />
+                  <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" aria-hidden="true" />
                 ) : (
-                  <Sun className="w-5 h-5 text-amber-400" aria-hidden="true" />
+                  <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" aria-hidden="true" />
                 )}
               </motion.div>
             </button>
 
             {/* Authentication Button or User Menu */}
             {isAuthenticated && user ? (
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <button
                   onClick={() => setLocation('/profile')}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-accent/50 border border-border/50 hover:bg-accent transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-accent/50 border border-border/50 hover:bg-accent transition-colors cursor-pointer"
                   title="Go to Profile"
                 >
                   <img
                     src={user.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`}
                     alt={user.name}
-                    className="w-6 h-6 rounded-full border border-primary/30"
+                    className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-primary/30"
                   />
-                  <span className="text-xs font-bold text-foreground hidden sm:inline max-w-[90px] truncate">
+                  <span className="text-[11px] sm:text-xs font-bold text-foreground hidden sm:inline max-w-[90px] truncate">
                     {user.name.split(" ")[0]}
                   </span>
                 </button>
@@ -476,17 +476,17 @@ export default function Home() {
                   variant="ghost"
                   size="icon"
                   onClick={logout}
-                  className="h-9 w-9 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-xl"
+                  className="h-8 w-8 sm:h-9 sm:w-9 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-xl"
                   title="Sign Out"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </Button>
               </div>
             ) : (
               <Button
                 onClick={() => setIsAuthOpen(true)}
                 variant="outline"
-                className="h-9 px-3.5 sm:px-4 rounded-xl text-xs font-semibold border-border hover:bg-accent flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                className="h-8 sm:h-9 px-2.5 sm:px-4 rounded-xl text-[11px] sm:text-xs font-semibold border-border hover:bg-accent flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shrink-0"
               >
                 <LogIn className="w-3.5 h-3.5 text-indigo-500" />
                 <span>Sign In</span>
@@ -494,15 +494,15 @@ export default function Home() {
             )}
 
             <button
-              className="md:hidden p-2 text-foreground/70 hover:text-primary transition-colors shrink-0"
+              className="md:hidden p-1.5 sm:p-2 text-foreground/70 hover:text-primary transition-colors shrink-0 -mr-2"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               aria-expanded={isMobileMenuOpen}
               aria-label="Toggle mobile menu"
             >
               {isMobileMenuOpen ? (
-                <X className="w-6 h-6" aria-hidden="true" />
+                <X className="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" />
               ) : (
-                <Menu className="w-6 h-6" aria-hidden="true" />
+                <Menu className="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" />
               )}
             </button>
 
