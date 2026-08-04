@@ -35,7 +35,7 @@ const FloatingParticles = memo(function FloatingParticles({
   const particles = useMemo(() => generateParticles(count), [count]);
 
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-10" aria-hidden="true">
       {particles.map((p) => (
         <motion.div
           key={p.id}

@@ -594,10 +594,10 @@ export default function Home() {
               <span className="text-sm font-bold text-foreground">Your Complete Academic Toolkit</span>
             </motion.div>
 
-            <h1 className="gradient-text-shimmer hero-title font-extrabold mb-6 text-5xl md:text-7xl tracking-tight leading-[1.1]">
-              Master Your
+            <h1 className="hero-title font-extrabold mb-6 text-5xl md:text-7xl tracking-tight leading-[1.1]">
+              <span className="gradient-text-shimmer inline-block">Master Your</span>
               <br />
-              Academic Journey
+              <span className="gradient-text-shimmer inline-block">Academic Journey</span>
             </h1>
 
             <p className="hero-subtitle text-lg md:text-xl text-foreground/70 mb-10 leading-relaxed font-medium max-w-2xl mx-auto">
