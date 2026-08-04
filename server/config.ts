@@ -13,6 +13,7 @@ export const JWT_SECRET = process.env.JWT_SECRET || FALLBACK_SECRET;
 export const TOKEN_EXPIRY = '30d';
 
 export const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
+export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'dipto.hello.me@gmail.com';
 
 export const COOKIE_OPTIONS = {
   httpOnly: true,

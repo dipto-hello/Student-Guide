@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { User, Mail, Shield, LogOut, Trash2, Edit3, Save, X, AlertTriangle } from "lucide-react";
+import { User, Mail, Shield, LogOut, Trash2, Edit3, Save, X, AlertTriangle, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function Profile() {
-  const { user, logout } = useAuth();
+  const { user, isAdmin, logout } = useAuth();
   const [, setLocation] = useLocation();
   const [isEditing, setIsEditing] = useState(false);
   const [nameInput, setNameInput] = useState(user?.name || "");
@@ -156,6 +156,23 @@ export default function Profile() {
         </div>
 
         <div className="space-y-6">
+          {isAdmin && (
+            <div className="premium-card rounded-2xl p-6 shadow-xl border border-border border-l-4 border-l-amber-500 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent pointer-events-none" />
+              <h2 className="text-xl font-bold mb-2 flex items-center gap-2 text-amber-500 relative z-10">
+                <ShieldAlert className="w-5 h-5" /> Admin Controls
+              </h2>
+              <p className="text-sm text-muted-foreground mb-6 relative z-10">You have administrative privileges on this platform.</p>
+              
+              <Button 
+                onClick={() => setLocation("/admin")} 
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 relative z-10 shadow-lg shadow-amber-500/20"
+              >
+                <ShieldAlert className="w-4 h-4" /> Open Admin Dashboard
+              </Button>
+            </div>
+          )}
+
           <div className="premium-card rounded-2xl p-6 shadow-xl border border-border border-l-4 border-l-rose-500">
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-rose-500">
               <AlertTriangle className="w-5 h-5" /> Danger Zone

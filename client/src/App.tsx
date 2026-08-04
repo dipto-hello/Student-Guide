@@ -15,6 +15,7 @@ const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const Profile = lazy(() => import("./pages/Profile"));
 const StudyRoom = lazy(() => import("./pages/StudyRoom"));
 const ToolPage = lazy(() => import("./pages/ToolPage"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -34,6 +35,11 @@ function Router() {
         <Route path={"/profile"}>
           <ProtectedRoute>
             <Profile />
+          </ProtectedRoute>
+        </Route>
+        <Route path={"/admin"}>
+          <ProtectedRoute>
+            <AdminDashboard />
           </ProtectedRoute>
         </Route>
         <Route path={"/404"} component={NotFound} />

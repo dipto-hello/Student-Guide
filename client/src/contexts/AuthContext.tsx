@@ -13,6 +13,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   isLoading: boolean;
   isChecking: boolean;
   loginWithGoogle: (credential: string) => Promise<boolean>;
@@ -74,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         isAuthenticated: !!user,
+        isAdmin: user?.email === 'dipto.hello.me@gmail.com',
         isLoading,
         isChecking: isLoading,
         loginWithGoogle,

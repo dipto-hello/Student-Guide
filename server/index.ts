@@ -10,6 +10,7 @@ import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
 import authRouter from './auth.js';
 import userRouter from './user.js';
+import adminRouter from './admin.js';
 import searchRouter from './search.js';
 import notificationsRouter from './notifications.js';
 import { setupWebSocket } from './socket.js';
@@ -57,6 +58,7 @@ async function startServer() {
   app.use('/api/', apiLimiter);
   app.use('/api/auth', authLimiter, authRouter);
   app.use('/api/user', userRouter);
+  app.use('/api/admin', adminRouter);
   app.use('/api/search', searchRouter);
   app.use('/api/notifications', notificationsRouter);
 
