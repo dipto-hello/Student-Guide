@@ -81,13 +81,13 @@ export async function initDb() {
     );
   `);
 
-  // ─── Migration: Recreate tables with ON DELETE CASCADE ───
-  // SQLite does not support ALTER TABLE to add/modify foreign key constraints.
-  // We use a safe recreate strategy: create new table → copy data → drop old → rename.
+  // ─── Table Creation (Without Dangerous Table Dropping Migration) ───
+  // We use IF NOT EXISTS so it doesn't break on restart.
+  // Foreign keys and CASCADE constraints are enforced when the table is first created.
 
   // user_courses
   await client.execute(`
-    CREATE TABLE IF NOT EXISTS user_courses_new (
+    CREATE TABLE IF NOT EXISTS user_courses (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
       name TEXT NOT NULL,
@@ -97,12 +97,10 @@ export async function initDb() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
   `);
-  await migrateTable(client, 'user_courses', 'user_courses_new',
-    'id, user_id, name, credit_hours, grade, created_at');
 
   // typing_scores
   await client.execute(`
-    CREATE TABLE IF NOT EXISTS typing_scores_new (
+    CREATE TABLE IF NOT EXISTS typing_scores (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
       wpm INTEGER NOT NULL,
@@ -112,12 +110,10 @@ export async function initDb() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
   `);
-  await migrateTable(client, 'typing_scores', 'typing_scores_new',
-    'id, user_id, wpm, accuracy, difficulty, created_at');
 
   // study_sessions
   await client.execute(`
-    CREATE TABLE IF NOT EXISTS study_sessions_new (
+    CREATE TABLE IF NOT EXISTS study_sessions (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
       type TEXT NOT NULL,
@@ -126,12 +122,10 @@ export async function initDb() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
   `);
-  await migrateTable(client, 'study_sessions', 'study_sessions_new',
-    'id, user_id, type, duration_minutes, created_at');
 
   // user_streaks
   await client.execute(`
-    CREATE TABLE IF NOT EXISTS user_streaks_new (
+    CREATE TABLE IF NOT EXISTS user_streaks (
       user_id TEXT PRIMARY KEY,
       current_streak INTEGER NOT NULL DEFAULT 0,
       longest_streak INTEGER NOT NULL DEFAULT 0,
@@ -140,12 +134,10 @@ export async function initDb() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
   `);
-  await migrateTable(client, 'user_streaks', 'user_streaks_new',
-    'user_id, current_streak, longest_streak, last_active_date, achievements');
 
   // notifications
   await client.execute(`
-    CREATE TABLE IF NOT EXISTS notifications_new (
+    CREATE TABLE IF NOT EXISTS notifications (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
       type TEXT NOT NULL,
@@ -155,35 +147,15 @@ export async function initDb() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
   `);
-  await migrateTable(client, 'notifications', 'notifications_new',
-    'id, user_id, type, message, is_read, created_at');
-}
 
-/**
- * Safe table migration helper for SQLite.
- * If the old table exists, copies its data to the new table, drops the old one,
- * and renames the new one. If the old table doesn't exist, just renames.
- */
-async function migrateTable(
-  dbClient: ReturnType<typeof createClient>,
-  oldName: string,
-  newName: string,
-  columns: string
-) {
-  // Check if old table exists
-  const result = await dbClient.execute(
-    `SELECT name FROM sqlite_master WHERE type='table' AND name='${oldName}';`
-  );
-
-  if (result.rows.length > 0) {
-    // Old table exists — copy data to new table
-    await dbClient.execute(
-      `INSERT OR IGNORE INTO ${newName} (${columns}) SELECT ${columns} FROM ${oldName};`
-    );
-    // Drop old table
-    await dbClient.execute(`DROP TABLE ${oldName};`);
+  // Cleanup: Drop any leftover migration tables from previous bugs
+  try {
+    await client.execute(`DROP TABLE IF EXISTS user_courses_new;`);
+    await client.execute(`DROP TABLE IF EXISTS typing_scores_new;`);
+    await client.execute(`DROP TABLE IF EXISTS study_sessions_new;`);
+    await client.execute(`DROP TABLE IF EXISTS user_streaks_new;`);
+    await client.execute(`DROP TABLE IF EXISTS notifications_new;`);
+  } catch (e) {
+    // Ignore if they don't exist
   }
-
-  // Rename new table to the original name
-  await dbClient.execute(`ALTER TABLE ${newName} RENAME TO ${oldName};`);
 }

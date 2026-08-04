@@ -3,16 +3,13 @@ import crypto from 'crypto';
 // Centralized configuration - single source of truth
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Generate a strong fallback JWT secret and warn if using it
-const FALLBACK_SECRET = crypto.randomBytes(64).toString('hex');
-if (!process.env.JWT_SECRET) {
-  console.warn('⚠️  WARNING: JWT_SECRET not set. Using auto-generated secret. Sessions will not persist across restarts.');
-}
-
-export const JWT_SECRET = process.env.JWT_SECRET || FALLBACK_SECRET;
+// Use a strong, static secret to ensure sessions persist across Render server restarts
+// without requiring manual environment variable configuration on Render dashboard.
+export const JWT_SECRET = process.env.JWT_SECRET || 'a8f2d91c4e7b3a6f0e5d8c2b9a1f4e7d3c6b0a5e8d2c9f1b4a7e0d3c6f9b2a5e8d1c4f7b0a3e6d9c2f5b8a1e4d7c0f3b6a9e2d5c8f1b4a7';
 export const TOKEN_EXPIRY = '30d';
 
-export const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
+// Hardcoded for zero-config Vercel deployment
+export const CLIENT_URL = process.env.CLIENT_URL || 'https://student-guide-green.vercel.app';
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'dipto.hello.me@gmail.com';
 
 export const COOKIE_OPTIONS = {
