@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { X } from "lucide-react";
@@ -23,6 +23,30 @@ interface AuthModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/** Google's official mark. Inlined so it paints with the button, not after it. */
+function GoogleLogo() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <path
+        fill="#4285F4"
+        d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92a8.78 8.78 0 0 0 2.68-6.62Z"
+      />
+      <path
+        fill="#34A853"
+        d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86a5.4 5.4 0 0 1-5.08-3.74H.96v2.34A8.99 8.99 0 0 0 9 18Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M3.92 10.68a5.41 5.41 0 0 1 0-3.36V4.98H.96a8.99 8.99 0 0 0 0 8.04l2.96-2.34Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59A8.99 8.99 0 0 0 .96 4.98L3.92 7.32A5.4 5.4 0 0 1 9 3.58Z"
+      />
+    </svg>
+  );
+}
+
 export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   const { loginWithGoogle } = useAuth();
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -30,30 +54,38 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   const googleButtonRef = useRef<HTMLDivElement>(null);
   const isInitialized = useRef(false);
 
-  // The Google button is injected asynchronously and cannot be styled by us, so
-  // it is held at opacity 0 until GSI has actually painted it, then faded in.
-  // Without this the button pops into an empty pill ~1s after the modal opens.
-  const [isButtonReady, setIsButtonReady] = useState(false);
+  /**
+   * Google's rendered button is never shown.
+   *
+   * Its markup is injected asynchronously and then mutates again as GSI fetches
+   * the logo and resolves the localized label — two visible content swaps we
+   * cannot style or transition away, because the subtree belongs to Google.
+   *
+   * So it is kept present-but-invisible (it must stay in the layout tree or GSI
+   * won't render it), and a button we own is shown instead. Clicking ours
+   * forwards the click to Google's, inside the same user-gesture task so the
+   * gesture is preserved. Nothing the user sees can blink, by construction.
+   */
+  const [isGoogleReady, setIsGoogleReady] = useState(false);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     onOpenChange(false);
-  };
+  }, [onOpenChange]);
 
-  const callbackRef = useRef((response: any) => {});
+  const callbackRef = useRef((_response: any) => {});
 
   useEffect(() => {
     callbackRef.current = async (response: { credential: string }) => {
       const success = await loginWithGoogle(response.credential);
       if (success) handleClose();
     };
-  }, [loginWithGoogle]);
+  }, [loginWithGoogle, handleClose]);
 
-  // Initialize Google Sign-In when modal opens
   useEffect(() => {
     if (!open || !googleClientId) {
       if (!open) {
         isInitialized.current = false;
-        setIsButtonReady(false);
+        setIsGoogleReady(false);
       }
       return;
     }
@@ -61,8 +93,9 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     let cancelled = false;
     let rafId = 0;
 
-    const renderGoogleButton = () => {
-      if (!googleButtonRef.current || isInitialized.current) return;
+    const renderHiddenButton = () => {
+      const container = googleButtonRef.current;
+      if (!container || isInitialized.current) return;
 
       window.google!.accounts.id.initialize({
         client_id: googleClientId,
@@ -71,46 +104,41 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
         itp_support: true,
       });
 
-      while (googleButtonRef.current.firstChild) {
-        googleButtonRef.current.removeChild(googleButtonRef.current.firstChild);
+      while (container.firstChild) {
+        container.removeChild(container.firstChild);
       }
 
-      // Calculate a safe width for mobile screens
-      const buttonWidth = Math.min(380, window.innerWidth - 80);
-
-      window.google!.accounts.id.renderButton(googleButtonRef.current, {
+      window.google!.accounts.id.renderButton(container, {
         type: "standard",
         theme: "filled_black",
         size: "large",
         text: "continue_with",
         shape: "pill",
-        width: buttonWidth,
         logo_alignment: "left",
       });
 
       isInitialized.current = true;
-      waitForPaint();
+      waitForClickTarget();
     };
 
-    // GSI fills the container asynchronously after renderButton returns. Reveal
-    // only once it has real dimensions, so the fade covers the whole injection.
-    const waitForPaint = () => {
+    // Enable our button only once there is something to forward the click to,
+    // so a click can never land on nothing.
+    const waitForClickTarget = () => {
       if (cancelled) return;
-      const painted = googleButtonRef.current?.firstElementChild as HTMLElement | undefined;
-      if (painted && painted.getBoundingClientRect().height > 0) {
-        setIsButtonReady(true);
+      if (findClickTarget()) {
+        setIsGoogleReady(true);
         return;
       }
-      rafId = requestAnimationFrame(waitForPaint);
+      rafId = requestAnimationFrame(waitForClickTarget);
     };
 
     // The GSI script is loaded with `async defer`, so it may not be ready when
-    // the modal opens. The previous implementation gave up after one attempt,
-    // which left the button permanently missing on a slow connection.
+    // the modal opens. Poll rather than making a single timed attempt, which
+    // would leave the button dead on a slow connection.
     const waitForSdk = () => {
       if (cancelled) return;
       if (window.google?.accounts?.id) {
-        renderGoogleButton();
+        renderHiddenButton();
         return;
       }
       rafId = requestAnimationFrame(waitForSdk);
@@ -123,6 +151,24 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
       cancelAnimationFrame(rafId);
     };
   }, [open, googleClientId]);
+
+  /**
+   * Locates the clickable node inside Google's injected subtree.
+   * GSI renders a `[role="button"]`; the element child is a fallback in case
+   * that internal structure changes.
+   */
+  function findClickTarget(): HTMLElement | null {
+    const container = googleButtonRef.current;
+    if (!container) return null;
+    return (
+      container.querySelector<HTMLElement>('[role="button"]') ??
+      (container.firstElementChild as HTMLElement | null)
+    );
+  }
+
+  const handleGoogleClick = () => {
+    findClickTarget()?.click();
+  };
 
   // Prevent scrolling when modal is open
   useEffect(() => {
@@ -162,6 +208,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
             <button
               onClick={handleClose}
               className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-colors z-10"
+              aria-label="Close"
             >
               <X className="w-4 h-4" />
             </button>
@@ -182,22 +229,26 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
 
               {/* Action Buttons */}
               <div className="w-full space-y-3 pt-2 flex flex-col items-center">
-                {/* Real Google Sign-In Button */}
                 {googleClientId ? (
-                  <div
-                    className="w-full flex justify-center items-center overflow-hidden rounded-full"
-                    style={{
-                      // Height is reserved up front so the injected button never
-                      // shifts the surrounding layout.
-                      height: '44px',
-                      backgroundColor: '#1f1f1f',
-                    }}
-                  >
+                  <div className="relative w-full">
+                    {/*
+                      Google's real button — invisible, but present in the layout
+                      tree because GSI does not render into a display:none node.
+                    */}
                     <div
                       ref={googleButtonRef}
-                      className="w-full flex justify-center transition-opacity duration-300 ease-out"
-                      style={{ opacity: isButtonReady ? 1 : 0 }}
+                      aria-hidden="true"
+                      className="absolute inset-0 opacity-0 pointer-events-none overflow-hidden"
                     />
+
+                    <button
+                      onClick={handleGoogleClick}
+                      disabled={!isGoogleReady}
+                      className="w-full h-12 rounded-full bg-white text-[#1f1f1f] font-semibold text-sm flex items-center justify-center gap-3 transition-[background-color,opacity] duration-200 hover:bg-zinc-100 disabled:opacity-60 disabled:cursor-default"
+                    >
+                      <GoogleLogo />
+                      <span>Continue with Google</span>
+                    </button>
                   </div>
                 ) : (
                   <div className="w-full p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs text-center">
