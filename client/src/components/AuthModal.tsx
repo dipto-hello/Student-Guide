@@ -88,7 +88,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md bg-[#18191B] text-white border border-white/10 shadow-2xl rounded-[2rem] p-0 overflow-hidden">
+      <DialogContent className="max-w-md bg-[#18191B] text-white border border-white/10 shadow-2xl rounded-[2rem] p-0 overflow-hidden !animate-none !duration-0" style={{ animation: 'none' }}>
         <DialogTitle className="sr-only">Authentication</DialogTitle>
         <div className="p-8 flex flex-col items-center text-center space-y-6">
           {/* Logo Icon */}
