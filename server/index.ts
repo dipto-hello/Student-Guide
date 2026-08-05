@@ -126,6 +126,11 @@ async function startServer() {
     message: { error: 'Too many writes, please slow down.' },
   });
 
+  // Issue the CSRF cookie on any /api response, including the health checks —
+  // the client primes its token from /api/health when it has an auth session
+  // but no CSRF cookie, so this has to run before those routes answer.
+  app.use('/api', csrfTokenIssuer);
+
   // ── Health checks ──────────────────────────────────────────────────────────
   // Mounted before the limiters so uptime probes are never rate limited.
   app.get('/api/health', (_req, res) => {
@@ -143,7 +148,7 @@ async function startServer() {
   });
 
   app.use('/api', apiLimiter);
-  app.use('/api', csrfTokenIssuer, csrfProtection);
+  app.use('/api', csrfProtection);
   app.use('/api', writeLimiter);
 
   app.use('/api/auth', authLimiter, authRouter);
