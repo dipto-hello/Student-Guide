@@ -11,6 +11,7 @@ const plugins = [
   jsxLocPlugin(),
   VitePWA({
     registerType: "autoUpdate",
+    injectRegister: "auto",
     includeAssets: ["favicon.ico", "apple-touch-icon.png", "masked-icon.svg"],
     manifest: {
       name: "Student Success Hub",
@@ -34,6 +35,9 @@ const plugins = [
       ]
     },
     workbox: {
+      cleanupOutdatedCaches: true,
+      clientsClaim: true,
+      skipWaiting: true,
       globPatterns: ["**/*.{js,css,html,ico,png,svg}"]
     }
   })

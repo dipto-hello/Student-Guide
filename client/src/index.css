@@ -88,6 +88,8 @@
   --glass-highlight: rgba(255, 255, 255, 0.95);
   --shadow-card: 0 1px 3px rgba(0,0,0,0.03), 0 6px 16px -4px rgba(0,0,0,0.05);
   --shadow-card-hover: 0 4px 12px rgba(99,102,241,0.08), 0 12px 32px -6px rgba(0,0,0,0.08);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.03), 0 6px 16px -4px rgba(0,0,0,0.05);
+  --shadow-card-hover: 0 4px 12px rgba(99,102,241,0.08), 0 12px 32px -6px rgba(0,0,0,0.08);
 }
 
 /* ============================
@@ -561,6 +563,31 @@ html {
 
   .tilt-3d-content {
     transform: translateZ(20px);
+  }
+
+  /* ============================
+   GLASSMORPHISM UTILITIES
+   ============================ */
+  @layer utilities {
+    .glass {
+      @apply bg-white/70 dark:bg-[#1A1A1F]/80 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.2)];
+      -webkit-backdrop-filter: blur(24px);
+      transform: translateZ(0); /* Force Hardware Acceleration */
+      will-change: transform, backdrop-filter;
+    }
+    
+    .glass-card {
+      @apply bg-white/60 dark:bg-[#1A1A1F]/60 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.02)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.1)];
+      -webkit-backdrop-filter: blur(16px);
+      transform: translateZ(0);
+      will-change: transform, backdrop-filter;
+    }
+    
+    .glass-panel {
+      @apply bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/10 dark:border-white/5;
+      -webkit-backdrop-filter: blur(12px);
+      transform: translateZ(0);
+    }
   }
 
   /* ============================
