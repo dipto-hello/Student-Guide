@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { User, Mail, Shield, LogOut, Trash2, Edit3, Save, X, AlertTriangle, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
+import { api, ApiError } from "@/lib/api";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,28 +37,19 @@ export default function Profile() {
   };
 
   const handleSaveName = async () => {
-    if (!nameInput.trim() || nameInput === user.name) {
+    const trimmed = nameInput.trim();
+    if (!trimmed || trimmed === user.name) {
       setIsEditing(false);
       return;
     }
-    
+
     setIsSaving(true);
     try {
-      const res = await fetch("/api/user/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: nameInput }),
-        credentials: "include"
-      });
-      
-      if (res.ok) {
-        toast.success("Profile updated! Please refresh to see changes globally.");
-        setIsEditing(false);
-      } else {
-        throw new Error();
-      }
-    } catch (e) {
-      toast.error("Failed to update profile");
+      await api.put("/api/user/profile", { name: trimmed });
+      toast.success("Profile updated! Please refresh to see changes globally.");
+      setIsEditing(false);
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Failed to update profile");
     } finally {
       setIsSaving(false);
     }
@@ -65,19 +57,12 @@ export default function Profile() {
 
   const handleDeleteAccount = async () => {
     try {
-      const res = await fetch("/api/user/account", {
-        method: "DELETE",
-        credentials: "include"
-      });
-      if (res.ok) {
-        toast.success("Account deleted successfully.");
-        await logout();
-        setLocation("/");
-      } else {
-        throw new Error();
-      }
-    } catch (e) {
-      toast.error("Failed to delete account");
+      await api.delete("/api/user/account");
+      toast.success("Account deleted successfully.");
+      await logout();
+      setLocation("/");
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Failed to delete account");
     }
   };
 

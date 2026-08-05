@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Check, Trash2, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
+import { api } from '@/lib/api';
 
 interface Notification {
   id: string;
@@ -23,17 +24,20 @@ export function Notifications() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    
-    // Fetch initial notifications
-    fetch('/api/notifications')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setNotifications(data);
-          setUnreadCount(data.filter(n => !n.isRead).length);
-        }
+    let cancelled = false;
+
+    api
+      .get<Notification[]>('/api/notifications')
+      .then((data) => {
+        if (cancelled || !Array.isArray(data)) return;
+        setNotifications(data);
+        setUnreadCount(data.filter((n) => !n.isRead).length);
       })
-      .catch(console.error);
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
   }, [isAuthenticated]);
 
   useEffect(() => {
@@ -56,21 +60,21 @@ export function Notifications() {
 
   const markAsRead = async (id: string) => {
     try {
-      await fetch(`/api/notifications/${id}/read`, { method: 'PUT' });
+      await api.put(`/api/notifications/${encodeURIComponent(id)}/read`);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (error) {
-      console.error(error);
+    } catch {
+      toast.error('Could not mark notification as read');
     }
   };
 
   const markAllAsRead = async () => {
     try {
-      await fetch(`/api/notifications/read-all`, { method: 'PUT' });
+      await api.put('/api/notifications/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
-    } catch (error) {
-      console.error(error);
+    } catch {
+      toast.error('Could not mark notifications as read');
     }
   };
 

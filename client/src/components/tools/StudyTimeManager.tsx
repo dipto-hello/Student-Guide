@@ -17,6 +17,7 @@ import {
   Award
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { api } from "@/lib/api";
 
 interface SessionRecord {
   id: string;
@@ -44,18 +45,21 @@ export default function StudyTimeManager() {
   };
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetch('/api/user/study-sessions', { credentials: 'include' })
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data) && data.length > 0) {
-            setSessionHistory(data);
-            const completedFocus = data.filter((s: any) => s.type === "focus").length;
-            setSessionsCompleted(completedFocus);
-          }
-        })
-        .catch(() => {});
-    }
+    if (!isAuthenticated) return;
+    let cancelled = false;
+
+    api
+      .get<SessionRecord[]>('/api/user/study-sessions')
+      .then((data) => {
+        if (cancelled || !Array.isArray(data) || data.length === 0) return;
+        setSessionHistory(data);
+        setSessionsCompleted(data.filter((s) => s.type === "focus").length);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
   }, [isAuthenticated]);
 
   const saveSession = (type: string, durationMinutes: number, nowFormatted: string) => {
@@ -65,12 +69,7 @@ export default function StudyTimeManager() {
     ]);
 
     if (isAuthenticated) {
-      fetch('/api/user/study-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, durationMinutes }),
-        credentials: 'include'
-      }).catch(() => {});
+      api.post('/api/user/study-session', { type, durationMinutes }).catch(() => {});
     }
   };
 

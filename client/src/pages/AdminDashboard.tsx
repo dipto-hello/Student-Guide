@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Users, BookOpen, Clock, Keyboard, ShieldAlert, Send, Trash2, Megaphone } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { api, ApiError } from "@/lib/api";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,21 +52,14 @@ export default function AdminDashboard() {
 
     setIsBroadcasting(true);
     try {
-      const res = await fetch("/api/admin/broadcast", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: broadcastMessage, type: "info" }),
+      const result = await api.post<{ count: number }>("/api/admin/broadcast", {
+        message: broadcastMessage.trim(),
+        type: "info",
       });
-
-      if (res.ok) {
-        toast.success("Message broadcasted to all users!");
-        setBroadcastMessage("");
-      } else {
-        const data = await res.json();
-        toast.error(data.error || "Failed to send broadcast");
-      }
-    } catch (e) {
-      toast.error("An error occurred");
+      toast.success(`Message broadcast to ${result.count} users`);
+      setBroadcastMessage("");
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Failed to send broadcast");
     } finally {
       setIsBroadcasting(false);
     }
@@ -73,16 +67,11 @@ export default function AdminDashboard() {
 
   const handleDeleteUser = async (userId: string) => {
     try {
-      const res = await fetch(`/api/admin/users/${userId}`, { method: "DELETE" });
-      if (res.ok) {
-        toast.success("User deleted successfully");
-        setUsers(users.filter(u => u.id !== userId));
-      } else {
-        const data = await res.json();
-        toast.error(data.error || "Failed to delete user");
-      }
-    } catch (e) {
-      toast.error("An error occurred");
+      await api.delete(`/api/admin/users/${encodeURIComponent(userId)}`);
+      toast.success("User deleted successfully");
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Failed to delete user");
     }
   };
 
@@ -93,25 +82,33 @@ export default function AdminDashboard() {
       return;
     }
 
+    let cancelled = false;
+
     const fetchAdminData = async () => {
       try {
-        const [statsRes, usersRes] = await Promise.all([
-          fetch("/api/admin/stats"),
-          fetch("/api/admin/users")
+        const [statsData, usersData] = await Promise.all([
+          api.get<AdminStats>("/api/admin/stats"),
+          api.get<UserData[]>("/api/admin/users"),
         ]);
-
-        if (statsRes.ok && usersRes.ok) {
-          setStats(await statsRes.json());
-          setUsers(await usersRes.json());
-        }
+        if (cancelled) return;
+        setStats(statsData);
+        setUsers(usersData);
       } catch (error) {
-        console.error("Failed to fetch admin data", error);
+        if (!cancelled) {
+          toast.error(
+            error instanceof ApiError ? error.message : "Failed to load admin data",
+          );
+        }
       } finally {
-        setLoadingData(false);
+        if (!cancelled) setLoadingData(false);
       }
     };
 
     fetchAdminData();
+
+    return () => {
+      cancelled = true;
+    };
   }, [isAdmin, isLoading, setLocation]);
 
   if (isLoading || loadingData) {

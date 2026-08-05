@@ -2,8 +2,8 @@ import { Router, Request, Response } from 'express';
 import { db, userCourses, typingScores, studySessions, userStreaks, users, notifications } from './db.js';
 import { eq, desc, and } from 'drizzle-orm';
 import { z } from 'zod';
-import { JWT_SECRET } from './config.js';
 import { requireAuth } from './auth.js';
+import { logger } from './logger.js';
 
 const router = Router();
 
@@ -44,8 +44,29 @@ const typingScoreSchema = z.object({
 });
 
 const studySessionSchema = z.object({
-  type: z.string().min(2),
-  durationMinutes: z.number().positive()
+  type: z.string().trim().min(2).max(50),
+  // Bounded so a client cannot log an implausible session and skew analytics.
+  durationMinutes: z.number().int().positive().max(24 * 60),
+});
+
+const profileSchema = z.object({
+  name: z.string().trim().min(2, 'Name must be at least 2 characters').max(80),
+});
+
+const achievementSchema = z.object({
+  // Slug format only — the value is persisted into a JSON array and rendered
+  // back to the client, so it must not carry arbitrary text.
+  achievementId: z
+    .string()
+    .trim()
+    .min(1)
+    .max(64)
+    .regex(/^[a-z0-9_-]+$/i, 'achievementId must be alphanumeric with - or _'),
+});
+
+/** Path params that carry a generated record id. */
+const idParamSchema = z.object({
+  id: z.string().trim().min(1).max(64),
 });
 
 // POST /api/user/courses
@@ -276,8 +297,11 @@ router.post('/streak/activity', async (req: AuthRequest, res: Response) => {
 // POST /api/user/streak/achievement
 router.post('/streak/achievement', async (req: AuthRequest, res: Response) => {
   try {
-    const { achievementId } = req.body;
-    if (!achievementId) return res.status(400).json({ error: 'Invalid input' });
+    const parsed = achievementSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid input', details: parsed.error.issues });
+    }
+    const { achievementId } = parsed.data;
 
     const streak = await db.select().from(userStreaks).where(eq(userStreaks.userId, req.userId!));
     if (streak.length === 0) {
@@ -310,12 +334,15 @@ router.post('/streak/achievement', async (req: AuthRequest, res: Response) => {
 // PUT /api/user/profile
 router.put('/profile', async (req: AuthRequest, res: Response) => {
   try {
-    const { name } = req.body;
-    if (!name || name.trim().length < 2) return res.status(400).json({ error: 'Invalid name' });
+    const parsed = profileSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid input', details: parsed.error.issues });
+    }
 
-    await db.update(users).set({ name }).where(eq(users.id, req.userId!));
-    res.json({ success: true });
+    await db.update(users).set({ name: parsed.data.name }).where(eq(users.id, req.userId!));
+    res.json({ success: true, name: parsed.data.name });
   } catch (error) {
+    logger.error('Failed to update profile', error, { userId: req.userId });
     res.status(500).json({ error: 'Failed to update profile' });
   }
 });

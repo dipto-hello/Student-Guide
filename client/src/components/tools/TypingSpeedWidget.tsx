@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useStreaks } from "@/hooks/useStreaks";
 import { useAuth } from "@/contexts/AuthContext";
 import { Confetti } from "@/components/Confetti";
+import { api } from "@/lib/api";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -176,9 +177,9 @@ export default function TypingSpeedWidget() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetch('/api/user/typing-history', { credentials: 'include' })
-        .then(res => res.json())
-        .then(data => {
+      api
+        .get<any[]>('/api/user/typing-history')
+        .then((data: any[]) => {
           if (Array.isArray(data) && data.length > 0) {
             const formatted = data.map((item: any) => ({
               wpm: item.wpm,
@@ -280,12 +281,13 @@ export default function TypingSpeedWidget() {
       if (isNewPB) setShowConfetti(true);
 
       if (isAuthenticated) {
-        fetch('/api/user/typing-score', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ wpm: finalWpm, accuracy: currAccuracy, difficulty }),
-          credentials: 'include'
-        }).catch(() => {});
+        api
+          .post('/api/user/typing-score', {
+            wpm: finalWpm,
+            accuracy: currAccuracy,
+            difficulty,
+          })
+          .catch(() => {});
       }
       
       const newHistory = [

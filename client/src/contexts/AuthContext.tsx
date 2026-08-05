@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { api, ApiError, primeCsrfToken } from "@/lib/api";
 
 export interface User {
   id: string;
@@ -8,6 +9,7 @@ export interface User {
   avatarUrl?: string;
   provider: "google" | "email";
   createdAt: string;
+  isAdmin: boolean;
 }
 
 interface AuthContextType {
@@ -26,46 +28,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // On mount, check if user is already logged in via cookie
+  // On mount, restore the session from the auth cookie and make sure a CSRF
+  // token exists before the user can trigger any mutation.
   useEffect(() => {
-    fetch('/api/auth/me', { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => {
-        if (data.user) setUser(data.user);
+    let cancelled = false;
+
+    primeCsrfToken()
+      .then(() => api.get<{ user: User | null }>('/api/auth/me'))
+      .then((data) => {
+        if (!cancelled && data.user) setUser(data.user);
       })
       .catch(() => {})
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const loginWithGoogle = useCallback(async (credential: string): Promise<boolean> => {
     try {
-      const res = await fetch('/api/auth/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential }),
-        credentials: 'include',
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || 'Google sign-in failed');
-        return false;
-      }
+      const data = await api.post<{ user: User }>('/api/auth/google', { credential });
       setUser(data.user);
       toast.success(`Welcome, ${data.user.name}!`);
       return true;
-    } catch {
-      toast.error('Google authentication failed');
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? error.message : 'Google authentication failed',
+      );
       return false;
     }
   }, []);
 
   const logout = useCallback(async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-    } catch {}
+      await api.post('/api/auth/logout');
+    } catch {
+      // Clearing local state matters more than the server round trip here.
+    }
     setUser(null);
     toast.info('Logged out successfully');
   }, []);
@@ -75,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         isAuthenticated: !!user,
-        isAdmin: user?.email === 'dipto.hello.me@gmail.com',
+        isAdmin: user?.isAdmin ?? false,
         isLoading,
         isChecking: isLoading,
         loginWithGoogle,

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { api } from '@/lib/api';
 
 export interface Course {
   id: string;
@@ -28,61 +29,58 @@ export const useCgpaStore = create<CgpaStore>()(
       setCourses: (courses) => set({ courses }),
       syncFromServer: async () => {
         try {
-          const res = await fetch('/api/user/courses', { credentials: 'include' });
-          if (res.ok) {
-            const data = await res.json();
-            if (data && Array.isArray(data) && data.length > 0) {
-              set({ courses: data });
-            }
+          const data = await api.get<Course[]>('/api/user/courses');
+          if (Array.isArray(data) && data.length > 0) {
+            set({ courses: data });
           }
-        } catch (e) {
-          // fail silently
+        } catch {
+          // Guests and offline users keep the persisted local list.
         }
       },
       addCourse: async (course) => {
-        const tempId = Date.now().toString();
-        const newCourse = { ...course, id: tempId };
-        set((state) => ({ courses: [...state.courses, newCourse] }));
-        
+        // Optimistic insert with a temporary id, reconciled with the server id
+        // below. On failure the row is rolled back so the local list never
+        // shows a course the server does not have.
+        const tempId = `temp_${Date.now()}`;
+        set((state) => ({ courses: [...state.courses, { ...course, id: tempId }] }));
+
         try {
-          const res = await fetch('/api/user/courses', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(course),
-            credentials: 'include'
-          });
-          if (res.ok) {
-            const data = await res.json();
-            set((state) => ({
-              courses: state.courses.map(c => c.id === tempId ? { ...c, id: data.id } : c)
-            }));
-          }
-        } catch (e) {}
+          const data = await api.post<{ id: string }>('/api/user/courses', course);
+          set((state) => ({
+            courses: state.courses.map((c) => (c.id === tempId ? { ...c, id: data.id } : c)),
+          }));
+        } catch {
+          set((state) => ({ courses: state.courses.filter((c) => c.id !== tempId) }));
+        }
       },
       removeCourse: async (id) => {
-        set((state) => ({ courses: state.courses.filter(c => c.id !== id) }));
+        const previous = get().courses;
+        set((state) => ({ courses: state.courses.filter((c) => c.id !== id) }));
         try {
-          await fetch(`/api/user/courses/${id}`, { method: 'DELETE', credentials: 'include' });
-        } catch (e) {}
+          await api.delete(`/api/user/courses/${encodeURIComponent(id)}`);
+        } catch {
+          set({ courses: previous });
+        }
       },
       updateCourse: async (id, field, value) => {
+        const previous = get().courses;
         set((state) => ({
-          courses: state.courses.map(c => c.id === id ? { ...c, [field]: value } : c)
+          courses: state.courses.map((c) => (c.id === id ? { ...c, [field]: value } : c)),
         }));
         try {
-          await fetch(`/api/user/courses/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ [field]: value }),
-            credentials: 'include'
-          });
-        } catch (e) {}
+          await api.patch(`/api/user/courses/${encodeURIComponent(id)}`, { [field]: value });
+        } catch {
+          set({ courses: previous });
+        }
       },
       clearAll: async () => {
+        const previous = get().courses;
         set({ courses: [] });
         try {
-          await fetch('/api/user/courses', { method: 'DELETE', credentials: 'include' });
-        } catch (e) {}
+          await api.delete('/api/user/courses');
+        } catch {
+          set({ courses: previous });
+        }
       }
     }),
     {

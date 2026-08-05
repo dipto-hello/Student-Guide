@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 
 interface StreakData {
   currentStreak: number;
@@ -29,18 +30,23 @@ export function useStreaks() {
     localStorage.setItem("student_streaks", JSON.stringify(streakData));
   }, [streakData]);
 
-  // Fetch from server if logged in
+  // Server state wins for signed-in users; localStorage is the guest fallback.
   useEffect(() => {
-    if (isAuthenticated) {
-      fetch('/api/user/streak', { credentials: 'include' })
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.currentStreak !== undefined) {
-            setStreakData(data);
-          }
-        })
-        .catch(() => {});
-    }
+    if (!isAuthenticated) return;
+    let cancelled = false;
+
+    api
+      .get<StreakData>('/api/user/streak')
+      .then((data) => {
+        if (!cancelled && data && data.currentStreak !== undefined) {
+          setStreakData(data);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
   }, [isAuthenticated]);
 
   const recordActivity = useCallback(() => {
@@ -68,7 +74,7 @@ export function useStreaks() {
     });
 
     if (isAuthenticated) {
-      fetch('/api/user/streak/activity', { method: 'POST', credentials: 'include' }).catch(() => {});
+      api.post('/api/user/streak/activity').catch(() => {});
     }
   }, [streakData.lastActiveDate, isAuthenticated]);
 
@@ -79,12 +85,7 @@ export function useStreaks() {
     });
 
     if (isAuthenticated) {
-      fetch('/api/user/streak/achievement', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ achievementId: id }),
-        credentials: 'include'
-      }).catch(() => {});
+      api.post('/api/user/streak/achievement', { achievementId: id }).catch(() => {});
     }
   }, [isAuthenticated]);
 

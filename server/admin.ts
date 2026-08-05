@@ -1,21 +1,32 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { randomUUID } from 'crypto';
 import { db, users, studySessions, userCourses, typingScores, notifications } from './db.js';
 import { desc, sql, eq } from 'drizzle-orm';
+import { z } from 'zod';
 import { requireAuth } from './auth.js';
-import { ADMIN_EMAIL } from './config.js';
+import { isAdminEmail } from './config.js';
+import { logger } from './logger.js';
 
 const router = Router();
 
-// Middleware to ensure user is admin
+/**
+ * Authorization gate for every admin route.
+ *
+ * Authorization is decided here and nowhere else — the client's `isAdmin` flag
+ * is a UI hint, never a permission. The email is re-derived from the verified
+ * JWT on each request rather than trusted from the request body.
+ */
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-  // First ensure they are authenticated
   requireAuth(req, res, () => {
-    // Then check if their email matches ADMIN_EMAIL
-    if (req.user?.email === ADMIN_EMAIL) {
+    if (isAdminEmail(req.user?.email)) {
       next();
-    } else {
-      res.status(403).json({ error: 'Forbidden: Admin access required' });
+      return;
     }
+    logger.warn('Admin access denied', {
+      userId: req.user?.id,
+      path: req.originalUrl,
+    });
+    res.status(403).json({ error: 'Forbidden: Admin access required' });
   });
 };
 
@@ -60,21 +71,28 @@ router.get('/users', requireAdmin, async (req, res) => {
   }
 });
 
+const broadcastSchema = z.object({
+  message: z.string().trim().min(1, 'Message is required').max(500),
+  type: z.enum(['info', 'success', 'warning', 'error']).default('info'),
+});
+
 // POST /api/admin/broadcast - Send notification to all users
 router.post('/broadcast', requireAdmin, async (req, res) => {
   try {
-    const { message, type = 'info' } = req.body;
-    
-    if (!message) {
-      return res.status(400).json({ error: 'Message is required' });
+    const parsed = broadcastSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid input', details: parsed.error.issues });
     }
+    const { message, type } = parsed.data;
 
     // Get all user IDs
     const allUsers = await db.select({ id: users.id }).from(users);
-    
-    // Create notifications in bulk
+
+    // Create notifications in bulk. IDs use randomUUID rather than
+    // Math.random(): a broadcast inserts thousands of rows in the same
+    // millisecond, where a weak PRNG risks primary-key collisions.
     const newNotifications = allUsers.map(user => ({
-      id: 'notif_' + Math.random().toString(36).substring(2) + Date.now(),
+      id: 'notif_' + randomUUID(),
       userId: user.id,
       type,
       message,
@@ -100,19 +118,30 @@ router.post('/broadcast', requireAdmin, async (req, res) => {
 router.delete('/users/:userId', requireAdmin, async (req, res) => {
   try {
     const { userId } = req.params;
-    
-    // Cannot delete yourself
-    if (req.user?.id === userId || req.user?.email === ADMIN_EMAIL) {
-      const targetUser = await db.select().from(users).where(eq(users.id, userId));
-      if (targetUser[0]?.email === ADMIN_EMAIL) {
-         return res.status(400).json({ error: 'Cannot delete the admin account' });
-      }
+
+    const targetUser = await db
+      .select({ id: users.id, email: users.email })
+      .from(users)
+      .where(eq(users.id, userId));
+
+    if (!targetUser[0]) {
+      return res.status(404).json({ error: 'User not found' });
     }
 
+    // The admin account is undeletable. The original check only ran when the
+    // caller was deleting themselves, so an admin could delete a second admin
+    // account; the guard now applies to the target unconditionally.
+    if (isAdminEmail(targetUser[0].email)) {
+      return res.status(400).json({ error: 'Cannot delete the admin account' });
+    }
+
+    // Child rows go via ON DELETE CASCADE (foreign keys are enabled in initDb).
     await db.delete(users).where(eq(users.id, userId));
+
+    logger.info('Admin deleted user', { actorId: req.user?.id, targetId: userId });
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting user:', error);
+    logger.error('Error deleting user', error, { targetId: req.params.userId });
     res.status(500).json({ error: 'Failed to delete user' });
   }
 });

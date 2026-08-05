@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { Search, Monitor, Moon, Sun, Calculator, Keyboard, BookOpen, MessageSquare, Timer, BarChart3, Users } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { api } from "@/lib/api";
 
 export function CommandMenu() {
   const [open, setOpen] = useState(false);
@@ -18,11 +19,12 @@ export function CommandMenu() {
       setSearchResults([]);
       return;
     }
+    // Debounced so a fast typist doesn't fire a request per keystroke.
     const timer = setTimeout(() => {
-      fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`)
-        .then(res => res.json())
-        .then(data => setSearchResults(data))
-        .catch(console.error);
+      api
+        .get<any[]>(`/api/search?q=${encodeURIComponent(searchQuery)}`)
+        .then(data => setSearchResults(Array.isArray(data) ? data : []))
+        .catch(() => setSearchResults([]));
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);

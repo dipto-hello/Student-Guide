@@ -1,3 +1,14 @@
+# pnpm settings. As of pnpm 11 the `pnpm` field in package.json is ignored,
+# so patches and overrides live here.
+
 allowBuilds:
-  '@tailwindcss/oxide': set this to true or false
-  esbuild: set this to true or false
+  '@tailwindcss/oxide': true
+  esbuild: true
+
+patchedDependencies:
+  wouter@3.7.1: patches/wouter@3.7.1.patch
+
+overrides:
+  # tailwindcss pulls a nanoid range with a known ReDoS advisory; pin the
+  # patched release.
+  tailwindcss>nanoid: 3.3.7

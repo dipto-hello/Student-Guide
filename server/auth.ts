@@ -3,10 +3,14 @@ import jwt from 'jsonwebtoken';
 import { db, users } from './db.js';
 import { eq } from 'drizzle-orm';
 import { NextFunction, Request, Response } from 'express';
-import { JWT_SECRET, TOKEN_EXPIRY, COOKIE_OPTIONS } from './config.js';
+import { JWT_SECRET, TOKEN_EXPIRY, COOKIE_OPTIONS, COOKIE_CLEAR_OPTIONS, GOOGLE_CLIENT_ID, isAdminEmail } from './config.js';
 import { OAuth2Client } from 'google-auth-library';
 
-const googleClient = new OAuth2Client(process.env.VITE_GOOGLE_CLIENT_ID);
+if (!GOOGLE_CLIENT_ID) {
+  throw new Error('VITE_GOOGLE_CLIENT_ID is required for Google OAuth');
+}
+
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 declare global {
   namespace Express {
@@ -47,7 +51,7 @@ router.post('/google', async (req, res) => {
 
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
-      audience: process.env.VITE_GOOGLE_CLIENT_ID,
+      audience: GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
     
@@ -86,9 +90,9 @@ router.post('/google', async (req, res) => {
 
     const token = generateToken(user);
     res.cookie('auth_token', token, COOKIE_OPTIONS);
-    
-    const { passwordHash, ...safeUser } = user;
-    res.json({ user: safeUser });
+
+    const { passwordHash, googleId: _, ...safeUser } = user;
+    res.json({ user: { ...safeUser, isAdmin: isAdminEmail(user.email) } });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -110,8 +114,8 @@ router.get('/me', async (req, res) => {
       return res.json({ user: null });
     }
 
-    const { passwordHash, googleId, ...safeUser } = user;
-    res.json({ user: safeUser });
+    const { passwordHash, googleId: _, ...safeUser } = user;
+    res.json({ user: { ...safeUser, isAdmin: isAdminEmail(user.email) } });
   } catch (error) {
     res.json({ user: null });
   }
@@ -119,7 +123,7 @@ router.get('/me', async (req, res) => {
 
 // POST /api/auth/logout
 router.post('/logout', (req, res) => {
-  res.clearCookie('auth_token', COOKIE_OPTIONS);
+  res.clearCookie('auth_token', COOKIE_CLEAR_OPTIONS);
   res.json({ success: true });
 });
 

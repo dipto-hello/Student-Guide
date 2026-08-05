@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 
 export default function AnalyticsDashboard() {
   const { isAuthenticated, isChecking } = useAuth();
@@ -40,17 +41,13 @@ export default function AnalyticsDashboard() {
 
     const fetchAnalytics = async () => {
       try {
-        const [scoresRes, coursesRes, streaksRes] = await Promise.all([
-          fetch('/api/user/typing-history', { credentials: 'include' }),
-          fetch('/api/user/courses', { credentials: 'include' }),
-          fetch('/api/user/streak', { credentials: 'include' })
+        const [scores, courses, streakData] = await Promise.all([
+          api.get<any[]>('/api/user/typing-history'),
+          api.get<any[]>('/api/user/courses'),
+          api.get<any>('/api/user/streak'),
         ]);
 
-        const scores = await scoresRes.json();
-        const courses = await coursesRes.json();
-        const streakData = await streaksRes.json();
-
-        // Process WPM Data (last 7 tests)
+        // Process WPM Data (last 10 tests)
         let processedWpm: { day: string, wpm: number }[] = [];
         if (Array.isArray(scores) && scores.length > 0) {
           const recentScores = [...scores].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()).slice(-10);
@@ -58,7 +55,7 @@ export default function AnalyticsDashboard() {
             day: `Test ${idx + 1}`,
             wpm: s.wpm
           }));
-          
+
           const first = processedWpm[0].wpm;
           const last = processedWpm[processedWpm.length - 1].wpm;
           let growth = 0;
@@ -91,8 +88,9 @@ export default function AnalyticsDashboard() {
           setStats(s => ({ ...s, studyStreak: streakData.currentStreak }));
         }
 
-      } catch (err) {
-        console.error("Failed to load analytics", err);
+      } catch {
+        // Guests see fallback stats; signed-in users with a transient error keep
+        // the last known values rather than showing zero.
       } finally {
         setLoading(false);
       }
