@@ -34,6 +34,15 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     onOpenChange(newOpen);
   };
 
+  const callbackRef = useRef((response: any) => {});
+
+  useEffect(() => {
+    callbackRef.current = async (response: { credential: string }) => {
+      const success = await loginWithGoogle(response.credential);
+      if (success) handleClose(false);
+    };
+  }, [loginWithGoogle]);
+
   // Initialize Google Sign-In when modal opens
   useEffect(() => {
     if (!open || !googleClientId) {
@@ -43,20 +52,19 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
 
     const initGoogle = () => {
       if (!window.google?.accounts?.id || !googleButtonRef.current) return;
-      if (isInitialized.current) return; // Prevent double render in StrictMode
+      if (isInitialized.current) return; // Prevent double render
 
       window.google.accounts.id.initialize({
         client_id: googleClientId,
-        callback: async (response: { credential: string }) => {
-          const success = await loginWithGoogle(response.credential);
-          if (success) handleClose(false);
-        },
+        callback: (res: any) => callbackRef.current(res),
         auto_select: false,
         itp_support: true,
       });
 
-      // Clear previous button
-      googleButtonRef.current.innerHTML = '';
+      // Clear previous button safely
+      while (googleButtonRef.current.firstChild) {
+        googleButtonRef.current.removeChild(googleButtonRef.current.firstChild);
+      }
 
       // Calculate a safe width for mobile screens
       const buttonWidth = Math.min(380, window.innerWidth - 80);
@@ -74,10 +82,13 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
       isInitialized.current = true;
     };
 
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(initGoogle, 100);
-    return () => clearTimeout(timer);
-  }, [open, googleClientId, loginWithGoogle]);
+    // Use requestAnimationFrame instead of setTimeout to avoid animation stutter
+    const frameId = requestAnimationFrame(() => {
+      initGoogle();
+    });
+    
+    return () => cancelAnimationFrame(frameId);
+  }, [open, googleClientId]);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
