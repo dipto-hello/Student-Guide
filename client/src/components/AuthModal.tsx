@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { X } from "lucide-react";
@@ -30,6 +30,11 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   const googleButtonRef = useRef<HTMLDivElement>(null);
   const isInitialized = useRef(false);
 
+  // The Google button is injected asynchronously and cannot be styled by us, so
+  // it is held at opacity 0 until GSI has actually painted it, then faded in.
+  // Without this the button pops into an empty pill ~1s after the modal opens.
+  const [isButtonReady, setIsButtonReady] = useState(false);
+
   const handleClose = () => {
     onOpenChange(false);
   };
@@ -46,22 +51,26 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   // Initialize Google Sign-In when modal opens
   useEffect(() => {
     if (!open || !googleClientId) {
-      if (!open) isInitialized.current = false;
+      if (!open) {
+        isInitialized.current = false;
+        setIsButtonReady(false);
+      }
       return;
     }
 
-    const initGoogle = () => {
-      if (!window.google?.accounts?.id || !googleButtonRef.current) return;
-      if (isInitialized.current) return;
+    let cancelled = false;
+    let rafId = 0;
 
-      window.google.accounts.id.initialize({
+    const renderGoogleButton = () => {
+      if (!googleButtonRef.current || isInitialized.current) return;
+
+      window.google!.accounts.id.initialize({
         client_id: googleClientId,
         callback: (res: any) => callbackRef.current(res),
         auto_select: false,
         itp_support: true,
       });
 
-      // Clear previous button safely
       while (googleButtonRef.current.firstChild) {
         googleButtonRef.current.removeChild(googleButtonRef.current.firstChild);
       }
@@ -69,7 +78,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
       // Calculate a safe width for mobile screens
       const buttonWidth = Math.min(380, window.innerWidth - 80);
 
-      window.google.accounts.id.renderButton(googleButtonRef.current, {
+      window.google!.accounts.id.renderButton(googleButtonRef.current, {
         type: "standard",
         theme: "filled_black",
         size: "large",
@@ -80,11 +89,39 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
       });
 
       isInitialized.current = true;
+      waitForPaint();
     };
 
-    // Small delay so the DOM is fully ready
-    const timer = setTimeout(initGoogle, 150);
-    return () => clearTimeout(timer);
+    // GSI fills the container asynchronously after renderButton returns. Reveal
+    // only once it has real dimensions, so the fade covers the whole injection.
+    const waitForPaint = () => {
+      if (cancelled) return;
+      const painted = googleButtonRef.current?.firstElementChild as HTMLElement | undefined;
+      if (painted && painted.getBoundingClientRect().height > 0) {
+        setIsButtonReady(true);
+        return;
+      }
+      rafId = requestAnimationFrame(waitForPaint);
+    };
+
+    // The GSI script is loaded with `async defer`, so it may not be ready when
+    // the modal opens. The previous implementation gave up after one attempt,
+    // which left the button permanently missing on a slow connection.
+    const waitForSdk = () => {
+      if (cancelled) return;
+      if (window.google?.accounts?.id) {
+        renderGoogleButton();
+        return;
+      }
+      rafId = requestAnimationFrame(waitForSdk);
+    };
+
+    waitForSdk();
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(rafId);
+    };
   }, [open, googleClientId]);
 
   // Prevent scrolling when modal is open
@@ -150,11 +187,17 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
                   <div
                     className="w-full flex justify-center items-center overflow-hidden rounded-full"
                     style={{
-                      minHeight: '44px',
+                      // Height is reserved up front so the injected button never
+                      // shifts the surrounding layout.
+                      height: '44px',
                       backgroundColor: '#1f1f1f',
                     }}
                   >
-                    <div ref={googleButtonRef} className="w-full flex justify-center" />
+                    <div
+                      ref={googleButtonRef}
+                      className="w-full flex justify-center transition-opacity duration-300 ease-out"
+                      style={{ opacity: isButtonReady ? 1 : 0 }}
+                    />
                   </div>
                 ) : (
                   <div className="w-full p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs text-center">
