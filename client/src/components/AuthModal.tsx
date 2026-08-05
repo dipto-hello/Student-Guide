@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -33,6 +33,11 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     onOpenChange(newOpen);
   };
 
+  // Prevent dialog from closing when Google popup steals focus
+  const preventClose = useCallback((e: Event) => {
+    e.preventDefault();
+  }, []);
+
   const callbackRef = useRef((response: any) => {});
 
   useEffect(() => {
@@ -45,7 +50,8 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
   // Initialize Google Sign-In when modal opens
   useEffect(() => {
     if (!open || !googleClientId) {
-      isInitialized.current = false;
+      // Only reset when closing, not on every render
+      if (!open) isInitialized.current = false;
       return;
     }
 
@@ -88,7 +94,12 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md bg-[#18191B] text-white border border-white/10 shadow-2xl rounded-[2rem] p-0 overflow-hidden !animate-none !duration-0" style={{ animation: 'none' }}>
+      <DialogContent
+        className="max-w-md bg-[#18191B] text-white border border-white/10 shadow-2xl rounded-[2rem] p-0 overflow-hidden"
+        onPointerDownOutside={preventClose}
+        onInteractOutside={preventClose}
+        onFocusOutside={preventClose}
+      >
         <DialogTitle className="sr-only">Authentication</DialogTitle>
         <div className="p-8 flex flex-col items-center text-center space-y-6">
           {/* Logo Icon */}
