@@ -28,9 +28,38 @@
     <meta property="twitter:description" content="A premium workspace for university students featuring CGPA Calculators, Study Managers, Typing Tests, and Resource Guides." />
     <meta property="twitter:image" content="https://student-guide-green.vercel.app/og-image.jpg" />
     
-    <!-- PWA Meta Tags -->
+    <!-- Favicon and PWA Meta Tags -->
     <meta name="theme-color" content="#3B82F6" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/pwa-192x192.png" />
+
+    <!-- Google Structured Data (JSON-LD) for Rich Snippets -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Student Success Hub",
+      "url": "https://student-guide-green.vercel.app/",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://student-guide-green.vercel.app/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Student Success Hub",
+      "url": "https://student-guide-green.vercel.app/",
+      "logo": "https://student-guide-green.vercel.app/pwa-512x512.png",
+      "sameAs": [
+        "https://github.com/dipto-hello"
+      ]
+    }
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
