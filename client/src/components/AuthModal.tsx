@@ -120,9 +120,14 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
             <div className="w-full space-y-3 pt-2 flex flex-col items-center">
               {/* Real Google Sign-In Button */}
               {googleClientId ? (
-                <div className="w-full flex justify-center h-12 items-center">
-                  <div ref={googleButtonRef} className="w-full flex justify-center" />
-                </div>
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4, duration: 0.4 }}
+                  className="w-full flex justify-center h-12 items-center"
+                >
+                  <div ref={googleButtonRef} className="w-full flex justify-center overflow-hidden rounded-full" />
+                </motion.div>
               ) : (
                 <div className="w-full p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs text-center">
                   <p className="font-semibold">Google Sign-In not configured</p>
