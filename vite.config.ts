@@ -38,8 +38,15 @@ const plugins = [
       cleanupOutdatedCaches: true,
       clientsClaim: true,
       skipWaiting: true,
-      globPatterns: ["**/*.{js,css,html,ico,png,svg}"]
-    }
+      globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+      // The SPA navigation fallback serves index.html for any navigation that
+      // isn't a precached asset. Without this denylist it also swallows
+      // top-level navigations to /api/* — which broke server-side Google OAuth:
+      // hitting /api/auth/google (and the /callback return from Google) rendered
+      // the SPA's 404 instead of reaching the backend. Excluding /api/ lets the
+      // browser take those to the network (Vercel rewrite -> Render).
+      navigateFallbackDenylist: [/^\/api\//],
+    },
   })
 ];
 
