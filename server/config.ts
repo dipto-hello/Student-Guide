@@ -38,6 +38,37 @@ export const ADMIN_EMAIL: string | undefined = env.ADMIN_EMAIL;
 /** Google OAuth client ID (public value). */
 export const GOOGLE_CLIENT_ID: string | undefined = env.VITE_GOOGLE_CLIENT_ID;
 
+/**
+ * Google OAuth client secret, needed to exchange an authorization code.
+ *
+ * Deliberately not a hard boot requirement: deploys are automatic on push, so
+ * failing startup here would take the whole site down between the code landing
+ * and the secret being configured. Sign-in reports a clear error instead.
+ */
+export const GOOGLE_CLIENT_SECRET: string | undefined = env.GOOGLE_CLIENT_SECRET;
+
+/**
+ * Where Google returns the user after consent.
+ *
+ * Defaults to the client origin because `/api/*` is proxied to this server from
+ * there — which also keeps the auth cookie first-party. Must match a URI
+ * registered in the Google Cloud console exactly.
+ */
+export const GOOGLE_REDIRECT_URI: string =
+  env.GOOGLE_REDIRECT_URI ?? `${CLIENT_URL}/api/auth/google/callback`;
+
+/** True when the server-side OAuth flow has everything it needs. */
+export const isGoogleOAuthConfigured = Boolean(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET);
+
+if (!isGoogleOAuthConfigured && !isTest) {
+  console.warn(
+    '[config] Google sign-in is disabled: ' +
+      (GOOGLE_CLIENT_ID
+        ? 'GOOGLE_CLIENT_SECRET is not set.'
+        : 'VITE_GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are not set.'),
+  );
+}
+
 /** Port the HTTP server binds to. */
 export const PORT: number = env.PORT ?? (isProduction ? 3000 : 3001);
 
@@ -73,6 +104,24 @@ export const COOKIE_CLEAR_OPTIONS = {
   secure: COOKIE_OPTIONS.secure,
   sameSite: COOKIE_OPTIONS.sameSite,
   path: COOKIE_OPTIONS.path,
+} as const;
+
+/**
+ * Short-lived cookie holding the OAuth `state` value.
+ *
+ * `sameSite: 'lax'` rather than the auth cookie's `none`: Google returns the
+ * user via a top-level GET navigation, which Lax permits, and Lax is rejected
+ * by browsers over plain HTTP only when paired with `none` — so this also works
+ * in local development.
+ */
+export const OAUTH_STATE_COOKIE = 'oauth_state';
+
+export const OAUTH_STATE_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: 'lax' as const,
+  maxAge: 10 * 60 * 1000, // the user has 10 minutes to finish consent
+  path: '/',
 } as const;
 
 /**

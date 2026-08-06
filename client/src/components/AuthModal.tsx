@@ -1,91 +1,56 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAuth } from "@/contexts/AuthContext";
 import { X } from "lucide-react";
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: any) => void;
-          renderButton: (element: HTMLElement, config: any) => void;
-          prompt: () => void;
-          cancel: () => void;
-        };
-      };
-    };
-  }
-}
 
 interface AuthModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+/** Official Google "G" mark, inlined so it needs no third-party script. */
+function GoogleLogo() {
+  return (
+    <svg className="w-5 h-5" viewBox="0 0 48 48" aria-hidden="true">
+      <path
+        fill="#EA4335"
+        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+      />
+      <path
+        fill="#4285F4"
+        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+      />
+      <path
+        fill="#34A853"
+        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Login modal.
+ *
+ * Sign-in is a plain top-level navigation to the server's OAuth entry point
+ * (`/api/auth/google`), which redirects to Google and back. There is no
+ * third-party widget to load, so nothing flickers while it initialises — the
+ * long-standing cause of the button "blink" is gone by construction.
+ */
 export function AuthModal({ open, onOpenChange }: AuthModalProps) {
-  const { loginWithGoogle } = useAuth();
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const [redirecting, setRedirecting] = useState(false);
 
-  const googleButtonRef = useRef<HTMLDivElement>(null);
-  const isInitialized = useRef(false);
+  const handleClose = () => onOpenChange(false);
 
-  const handleClose = () => {
-    onOpenChange(false);
+  const handleGoogleLogin = () => {
+    setRedirecting(true);
+    // Full-page navigation: the server sets the session cookie and returns the
+    // browser to the SPA, so there is nothing async to await here.
+    window.location.href = "/api/auth/google";
   };
-
-  const callbackRef = useRef((response: any) => {});
-
-  useEffect(() => {
-    callbackRef.current = async (response: { credential: string }) => {
-      const success = await loginWithGoogle(response.credential);
-      if (success) handleClose();
-    };
-  }, [loginWithGoogle]);
-
-  // Initialize Google Sign-In when modal opens
-  useEffect(() => {
-    if (!open || !googleClientId) {
-      if (!open) isInitialized.current = false;
-      return;
-    }
-
-    const initGoogle = () => {
-      if (!window.google?.accounts?.id || !googleButtonRef.current) return;
-      if (isInitialized.current) return;
-
-      window.google.accounts.id.initialize({
-        client_id: googleClientId,
-        callback: (res: any) => callbackRef.current(res),
-        auto_select: false,
-        itp_support: true,
-      });
-
-      // Clear previous button safely
-      while (googleButtonRef.current.firstChild) {
-        googleButtonRef.current.removeChild(googleButtonRef.current.firstChild);
-      }
-
-      // Calculate a safe width for mobile screens
-      const buttonWidth = Math.min(380, window.innerWidth - 80);
-
-      window.google.accounts.id.renderButton(googleButtonRef.current, {
-        type: "standard",
-        theme: "filled_black",
-        size: "large",
-        text: "continue_with",
-        shape: "pill",
-        width: buttonWidth,
-        logo_alignment: "left",
-      });
-
-      isInitialized.current = true;
-    };
-
-    // Small delay so the DOM is fully ready
-    const timer = setTimeout(initGoogle, 150);
-    return () => clearTimeout(timer);
-  }, [open, googleClientId]);
 
   // Prevent scrolling when modal is open
   useEffect(() => {
@@ -124,6 +89,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
             {/* Close Button */}
             <button
               onClick={handleClose}
+              aria-label="Close"
               className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-colors z-10"
             >
               <X className="w-4 h-4" />
@@ -145,17 +111,24 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
 
               {/* Action Buttons */}
               <div className="w-full space-y-3 pt-2 flex flex-col items-center">
-                {/* Real Google Sign-In Button */}
                 {googleClientId ? (
-                  <div
-                    className="w-full flex justify-center items-center overflow-hidden rounded-full"
-                    style={{
-                      minHeight: '44px',
-                      backgroundColor: '#1f1f1f',
-                    }}
+                  <button
+                    onClick={handleGoogleLogin}
+                    disabled={redirecting}
+                    className="w-full h-12 rounded-full bg-white text-[#1f1f1f] font-semibold text-sm flex items-center justify-center gap-3 transition-all hover:bg-zinc-100 active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
                   >
-                    <div ref={googleButtonRef} className="w-full flex justify-center" />
-                  </div>
+                    {redirecting ? (
+                      <>
+                        <span className="w-4 h-4 rounded-full border-2 border-zinc-400/40 border-t-zinc-600 animate-spin" />
+                        Redirecting…
+                      </>
+                    ) : (
+                      <>
+                        <GoogleLogo />
+                        Continue with Google
+                      </>
+                    )}
+                  </button>
                 ) : (
                   <div className="w-full p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs text-center">
                     <p className="font-semibold">Google Sign-In not configured</p>

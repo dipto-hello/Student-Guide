@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import cors from 'cors';
 import compression from 'compression';
-import { rateLimit } from 'express-rate-limit';
+import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 
 import { db, initDb, closeDb } from "./db.js";
 import authRouter from './auth.js';
@@ -97,7 +97,11 @@ async function startServer() {
   // ── Rate limiting ──────────────────────────────────────────────────────────
   // Keyed by user id when authenticated so users behind a shared NAT (a campus
   // network — the actual audience here) don't exhaust each other's budget.
-  const keyGenerator = (req: Request) => req.user?.id ?? req.ip ?? 'unknown';
+  //
+  // The IP fallback goes through `ipKeyGenerator`, which collapses an IPv6
+  // address to its /64 prefix. Without it, a single IPv6 client can rotate
+  // through the trillions of addresses in its own block to sidestep the limit.
+  const keyGenerator = (req: Request) => req.user?.id ?? ipKeyGenerator(req.ip ?? 'unknown');
 
   const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,

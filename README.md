@@ -34,7 +34,7 @@
 *   **⌨️ Typing Speed Widget:** Test and improve your WPM (Words Per Minute) in real-time.
 *   **👥 Real-Time Study Room:** Join a virtual study room (via Socket.io) to see who else is studying and chat with peers.
 *   **👑 Powerful Admin Dashboard:** Exclusive admin panel to monitor platform analytics, broadcast messages to all users, and manage accounts.
-*   **🔒 Secure Authentication:** Seamless and secure Google OAuth integration.
+*   **🔒 Secure Authentication:** Seamless and secure server-side Google OAuth 2.0 (authorization-code flow) with PKCE and httpOnly session cookies.
 *   **📱 Fully Responsive:** Beautiful, premium UI that works flawlessly on desktop, tablet, and mobile.
 *   **🌍 PWA Ready:** Installable as a Progressive Web App for offline access!
 
@@ -95,7 +95,12 @@ npm install
 Create a `.env` file in the root directory and add the following:
 ```env
 VITE_GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 ```
+*(Both come from the same OAuth 2.0 Client in [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials). The client secret is server-only — never expose it to the frontend.)*
+
+> **⚠️ Register your redirect URI:** The server-side OAuth flow redirects back to `/api/auth/google/callback`. In Google Cloud Console → Credentials, add **both** `http://localhost:3000/api/auth/google/callback` (local dev) and `https://<your-vercel-domain>/api/auth/google/callback` (production) as **Authorized redirect URIs**.
+
 *(Note: JWT_SECRET, ADMIN_EMAIL, and CLIENT_URL are automatically handled via zero-config deployment settings in `server/config.ts`)*
 
 ### 4. Run the Development Server

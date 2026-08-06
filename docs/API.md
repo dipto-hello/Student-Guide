@@ -82,16 +82,53 @@ Returns `200 {"status":"ready"}` or `503 {"status":"unavailable"}`.
 
 ## Auth — `/api/auth`
 
+### `GET /api/auth/google`
+
+Starts the server-side OAuth 2.0 authorization-code flow. Generates a random
+`state` parameter and PKCE values, stores them in a short-lived httpOnly
+`oauth_state` cookie, and redirects (302) to Google's consent screen.
+
+The client initiates sign-in by navigating to this endpoint (e.g., via
+`window.location.href = '/api/auth/google'` or an anchor tag).
+
+**Response `302`** — redirects to `https://accounts.google.com/o/oauth2/v2/auth`
+with the OAuth parameters. Also sets the `oauth_state` cookie.
+
+### `GET /api/auth/google/callback`
+
+Handles the OAuth redirect from Google. Verifies the `state` and `oauth_state`
+cookie, exchanges the authorization code for tokens using the client secret,
+verifies the ID token, upserts the user, sets the `auth_token` session cookie,
+and redirects back to the SPA.
+
+**Query params** (set by Google)
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `code` | string | Authorization code |
+| `state` | string | Must match the `oauth_state` cookie |
+
+**Response `302` (success)** — redirects to `CLIENT_URL` with the `auth_token`
+cookie set.
+
+**Response `302` (error)** — redirects to `CLIENT_URL/?auth_error=<reason>`.
+Reasons: `oauth_not_configured`, `access_denied`, `invalid_request`,
+`state_mismatch`, `no_id_token`, `email_unverified`, `exchange_failed`.
+
 ### `POST /api/auth/google`
 
-Exchanges a Google ID token for a session. Creates the user on first sign-in and
-links `googleId` to an existing account matched by email.
+**Deprecated but still supported for backward compatibility.** Exchanges a Google
+ID token for a session. Creates the user on first sign-in and links `googleId`
+to an existing account matched by email.
+
+New integrations should use the server-side flow (`GET /api/auth/google` →
+callback) instead of the client-side widget.
 
 **Body**
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `credential` | string | ID token from Google Identity Services |
+| `credential` | string | ID token from Google Identity Services (client-side widget) |
 
 **Response `200`** — also sets the `auth_token` cookie.
 
