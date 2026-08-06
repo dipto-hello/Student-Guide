@@ -1,6 +1,9 @@
 node_modules
 .env
 .env.*
+# ...but the committed template that documents them must stay tracked.
+!.env.example
+*.local
 dist
 local.db
 local.db-journal
@@ -8,3 +11,7 @@ local.db-journal
 client_secret_*.json
 # Storybook build output
 storybook-static/
+# Test outputs
+coverage/
+playwright-report/
+test-results/

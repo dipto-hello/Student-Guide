@@ -31,6 +31,18 @@ const baseSchema = z.object({
   /** Google OAuth client ID — public value, shared with the frontend. */
   VITE_GOOGLE_CLIENT_ID: z.string().min(1).optional(),
 
+  /**
+   * Google OAuth client secret. Required to exchange an authorization code for
+   * tokens in the server-side redirect flow.
+   */
+  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+
+  /**
+   * Where Google returns the user after consent. Must match a URI registered in
+   * the Google Cloud console exactly. Defaults to `${CLIENT_URL}/api/auth/google/callback`.
+   */
+  GOOGLE_REDIRECT_URI: z.string().url().optional(),
+
   /** Turso libSQL connection. Falls back to a local file when unset. */
   TURSO_DATABASE_URL: z.string().min(1).optional(),
   TURSO_AUTH_TOKEN: z.string().min(1).optional(),

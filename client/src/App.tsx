@@ -6,8 +6,6 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SocketProvider } from "./contexts/SocketContext";
-import { CommandMenu } from "./components/CommandMenu";
-import { Notifications } from "./components/Notifications";
 
 const Home = lazy(() => import("./pages/Home"));
 const PomodoroTimer = lazy(() => import("./pages/PomodoroTimer"));
@@ -17,6 +15,17 @@ const StudyRoom = lazy(() => import("./pages/StudyRoom"));
 const ToolPage = lazy(() => import("./pages/ToolPage"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
+
+// Global overlays that are always mounted but never needed for first paint.
+// Deferring them keeps their heavy deps (cmdk, framer-motion) out of the entry
+// chunk so the initial shell renders sooner; they hydrate a tick later, which
+// is imperceptible for a Cmd+K palette and a notifications bell.
+const CommandMenu = lazy(() =>
+  import("./components/CommandMenu").then((m) => ({ default: m.CommandMenu })),
+);
+const Notifications = lazy(() =>
+  import("./components/Notifications").then((m) => ({ default: m.Notifications })),
+);
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function Router() {
@@ -57,8 +66,10 @@ function App() {
           <SocketProvider>
             <TooltipProvider>
               <Toaster />
-              <CommandMenu />
-              <Notifications />
+              <Suspense fallback={null}>
+                <CommandMenu />
+                <Notifications />
+              </Suspense>
               <Router />
             </TooltipProvider>
           </SocketProvider>

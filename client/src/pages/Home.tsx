@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
+import { toast } from "sonner";
 import { AuthModal } from "@/components/AuthModal";
 import { Navbar } from "./home/Navbar";
 import { HeroSection } from "./home/HeroSection";
@@ -39,13 +40,38 @@ export default function Home() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // `?login=true` deep link opens the auth modal, then the query is stripped so
-  // a refresh or back-navigation doesn't reopen it.
+  // Handles the deep links the app navigates back to:
+  //   ?login=true    → open the auth modal (from ProtectedRoute)
+  //   ?auth=success  → Google sign-in returned; greet the user
+  //   ?auth_error=X  → Google sign-in failed; explain why
+  // The query is stripped afterwards so a refresh or back-navigation is clean.
   useEffect(() => {
-    if (window.location.search.includes("login=true")) {
-      setIsAuthOpen(true);
-      window.history.replaceState({}, "", "/");
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("login") && !params.has("auth") && !params.has("auth_error")) {
+      return;
     }
+
+    if (params.get("login") === "true") {
+      setIsAuthOpen(true);
+    }
+
+    if (params.get("auth") === "success") {
+      toast.success("Signed in successfully. Welcome!");
+    }
+
+    const error = params.get("auth_error");
+    if (error) {
+      const messages: Record<string, string> = {
+        oauth_not_configured: "Google sign-in is not configured yet.",
+        access_denied: "Sign-in was cancelled.",
+        state_mismatch: "Your sign-in session expired. Please try again.",
+        invalid_request: "Something went wrong signing in. Please try again.",
+        email_unverified: "Your Google email is not verified.",
+      };
+      toast.error(messages[error] ?? "Sign-in failed. Please try again.");
+    }
+
+    window.history.replaceState({}, "", "/");
   }, []);
 
   const handleShowTool = useCallback(

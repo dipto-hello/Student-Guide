@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { api, ApiError, primeCsrfToken } from "@/lib/api";
+import { api, primeCsrfToken } from "@/lib/api";
 
 export interface User {
   id: string;
@@ -18,7 +18,6 @@ interface AuthContextType {
   isAdmin: boolean;
   isLoading: boolean;
   isChecking: boolean;
-  loginWithGoogle: (credential: string) => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
@@ -48,20 +47,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const loginWithGoogle = useCallback(async (credential: string): Promise<boolean> => {
-    try {
-      const data = await api.post<{ user: User }>('/api/auth/google', { credential });
-      setUser(data.user);
-      toast.success(`Welcome, ${data.user.name}!`);
-      return true;
-    } catch (error) {
-      toast.error(
-        error instanceof ApiError ? error.message : 'Google authentication failed',
-      );
-      return false;
-    }
-  }, []);
-
   const logout = useCallback(async () => {
     try {
       await api.post('/api/auth/logout');
@@ -80,7 +65,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAdmin: user?.isAdmin ?? false,
         isLoading,
         isChecking: isLoading,
-        loginWithGoogle,
         logout,
       }}
     >
